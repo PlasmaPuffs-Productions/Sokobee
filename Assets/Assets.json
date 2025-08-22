@@ -1,0 +1,49 @@
+{
+        "fonts": {
+                "display": "Assets/Fonts/Dangrek/Dangrek-Regular.ttf",
+                "debug": "Assets/Fonts/Fira Mono/FiraMono-Regular.ttf",
+                "body": "Assets/Fonts/Nunito/Nunito-Medium.ttf"
+        },
+        "levels": [
+                {
+                        "title": "Push the Block",
+                        "path": "Assets/Levels/Level1.json"
+                },
+                {
+                        "title": "Turn Around",
+                        "path": "Assets/Levels/Level2.json"
+                },
+                {
+                        "title": "Two Too Many",
+                        "path": "Assets/Levels/Level3.json"
+                },
+                {
+                        "title": "Double Push?",
+                        "path": "Assets/Levels/Level4.json"
+                },
+                {
+                        "title": "Hexscape",
+                        "path": "Assets/Levels/Level5.json"
+                },
+                {
+                        "title": "Swiss Cheese",
+                        "path": "Assets/Levels/Level6.json"
+                },
+                {
+                        "title": "Roundabout",
+                        "path": "Assets/Levels/Level7.json"
+                }
+        ],
+        "sounds": {
+                "Click": "Assets/Sounds/Click.wav",
+                "Hit": "Assets/Sounds/Hit.wav",
+                "Move": "Assets/Sounds/Move.wav",
+                "Placed": "Assets/Sounds/Placed.wav",
+                "Push": "Assets/Sounds/Push.wav",
+                "Turn": "Assets/Sounds/Turn.wav",
+                "Undo": "Assets/Sounds/Undo.wav",
+                "Win": "Assets/Sounds/Win.wav"
+        },
+        "music": {
+        }
+}
