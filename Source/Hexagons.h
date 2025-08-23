@@ -317,17 +317,14 @@ static inline void write_hexagon_thickness_geometry(struct Geometry *const geome
         const SDL_FPoint b4 = {a4.x, a4.y + thickness};
 
         if (thickness_mask & HEXAGON_THICKNESS_MASK_LEFT) {
-                SDL_FPoint quad[4] = {a1, a2, b2, b1};
-                write_quad_geometry(geometry, quad);
+                write_quadrilateral_geometry(geometry, a1.x, a1.y, a2.x, a2.y, b2.x, b2.y, b1.x, b1.y);
         }
 
         if (thickness_mask & HEXAGON_THICKNESS_MASK_BOTTOM) {
-                SDL_FPoint quad[4] = {a2, a3, b3, b2};
-                write_quad_geometry(geometry, quad);
+                write_quadrilateral_geometry(geometry, a2.x, a2.y, a3.x, a3.y, b3.x, b3.y, b2.x, b2.y);
         }
 
         if (thickness_mask & HEXAGON_THICKNESS_MASK_RIGHT) {
-                SDL_FPoint quad[4] = {a3, a4, b4, b3};
-                write_quad_geometry(geometry, quad);
+                write_quadrilateral_geometry(geometry, a3.x, a3.y, a4.x, a4.y, b4.x, b4.y, b3.x, b3.y);
         }
 }

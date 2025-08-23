@@ -43,7 +43,7 @@ static void setup_block_entity(struct Entity *const entity) {
         entity->payload = xcalloc(1ULL, sizeof(struct Block));
 
         struct Block *const block = (struct Block *)entity->payload;
-        block->geometry = create_geometry(4ULL + HEXAGON_VERTEX_COUNT * 2ULL, 6ULL + HEXAGON_INDEX_COUNT * 2ULL);
+        block->geometry = create_geometry();
         block->scale = 1.0f;
 }
 
@@ -72,12 +72,13 @@ static void update_block_entity(struct Entity *const entity, const double delta_
 
         clear_geometry(block->geometry);
 
-        set_geometry_color(block->geometry, COLOR_GOLD);
-        write_rectangle_geometry(block->geometry, (SDL_FRect){position.x, position.y, tile_radius, thickness}, 0.0f);
-        write_hexagon_geometry(block->geometry, (SDL_FPoint){position.x, position.y + thickness / 2.0f}, tile_radius / 2.0f, 0.0f);
+        // TODO: Use 'write_hexagon_thickness()' instead of this
+        set_geometry_color(block->geometry, COLOR_GOLD, 255);
+        write_rectangle_geometry(block->geometry, position.x, position.y, tile_radius, thickness, 0.0f);
+        write_hexagon_geometry(block->geometry, position.x, position.y + thickness / 2.0f, tile_radius / 2.0f, 0.0f);
 
-        set_geometry_color(block->geometry, COLOR_LIGHT_YELLOW);
-        write_hexagon_geometry(block->geometry, (SDL_FPoint){position.x, position.y - thickness / 2.0f}, tile_radius / 2.0f, 0.0f);
+        set_geometry_color(block->geometry, COLOR_LIGHT_YELLOW, 255);
+        write_hexagon_geometry(block->geometry, position.x, position.y - thickness / 2.0f, tile_radius / 2.0f, 0.0f);
 
         render_geometry(block->geometry);
 }

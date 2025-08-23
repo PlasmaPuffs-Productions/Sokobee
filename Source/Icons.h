@@ -13,14 +13,18 @@ enum IconType {
 
 struct Icon;
 
-struct Icon *create_icon(const enum IconType type, const float size, const float x, const float y, const SDL_Color color);
+struct Icon *create_icon(const enum IconType type);
+
 void destroy_icon(struct Icon *const icon);
 
 void update_icon(struct Icon *const icon);
+
 void set_icon_type(struct Icon *const icon, const enum IconType type);
+
 void set_icon_size(struct Icon *const icon, const float size);
+
 void set_icon_position(struct Icon *const icon, const float x, const float y);
-void set_icon_color(struct Icon *const icon, const SDL_Color color);
+
 void set_icon_rotation(struct Icon *const icon, const float rotation);
 
 /*

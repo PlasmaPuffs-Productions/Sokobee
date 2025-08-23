@@ -30,10 +30,10 @@ struct Text {
 
 typedef struct SDL_Color SDL_Color;
 
-struct Text *load_text(const char *const string, const enum Font font, const SDL_Color color);
+struct Text *create_text(const char *const string, const enum Font font);
 void destroy_text(struct Text *const text);
 
-bool initialize_text(struct Text *const text, const char *const string, const enum Font font, const SDL_Color color);
+void initialize_text(struct Text *const text, const char *const string, const enum Font font);
 void deinitialize_text(struct Text *const text);
 
 void update_text(struct Text *const text);
@@ -45,4 +45,4 @@ void set_text_font(struct Text *const text, const enum Font font);
 void set_text_alignment(struct Text *const text, const enum TextAlignment alignment);
 void set_text_maximum_width(struct Text *const text, const float maximum_width);
 void set_text_line_spacing(struct Text *const text, const float line_spacing);
-void set_text_color(struct Text *const text, const SDL_Color color);
+void set_text_color(struct Text *const text, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a);

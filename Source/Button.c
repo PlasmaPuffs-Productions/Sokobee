@@ -75,7 +75,7 @@ void initialize_button(struct Button *const button, const bool grid_slot_positio
         button->thickness_mask = HEXAGON_THICKNESS_MASK_ALL;
 
         button->implementation = (struct ButtonImplementation *)xmalloc(sizeof(struct ButtonImplementation));
-        button->implementation->geometry = create_geometry(0ULL, 0ULL);
+        button->implementation->geometry = create_geometry();
         button->implementation->state = BUTTON_IDLE;
         button->implementation->hovering = false;
         button->implementation->tooltip_text = NULL;
@@ -190,7 +190,7 @@ void set_button_surface_icon(struct Button *const button, const enum IconType ic
                 return;
         }
 
-        button->implementation->surface_icon = create_icon(icon_type, 0.0f, 0.0f, 0.0f, COLOR_BROWN);
+        button->implementation->surface_icon = create_icon(icon_type);
 }
 
 bool set_button_surface_text(struct Button *const button, char *const surface_text) {
@@ -199,13 +199,10 @@ bool set_button_surface_text(struct Button *const button, char *const surface_te
                 return true;
         }
 
-        if (!(button->implementation->surface_text = load_text(surface_text, FONT_HEADER_1, COLOR_BROWN))) {
-                send_message(ERROR, "Failed to load button surface text");
-                return false;
-        }
-
+        button->implementation->surface_text = create_text(surface_text, FONT_HEADER_1);
         button->implementation->surface_text->relative_offset_x = -0.5f;
         button->implementation->surface_text->relative_offset_y = -0.5f;
+        set_text_color(button->implementation->surface_text, COLOR_BROWN, 255);
 
         return true;
 }
@@ -335,14 +332,14 @@ bool update_button(struct Button *const button, const double delta_time) {
                 .y = y - height_offset
         };
 
-        set_geometry_color(button->implementation->geometry, COLOR_GOLD);
+        set_geometry_color(button->implementation->geometry, COLOR_GOLD, 255);
         write_hexagon_thickness_geometry(button->implementation->geometry, surface_position.x, surface_position.y, radius, thickness, button->thickness_mask);
 
-        set_geometry_color(button->implementation->geometry, COLOR_LIGHT_YELLOW);
-        write_hexagon_geometry(button->implementation->geometry, surface_position, radius + (line_width / 2.0f), 0.0f);
+        set_geometry_color(button->implementation->geometry, COLOR_LIGHT_YELLOW, 255);
+        write_hexagon_geometry(button->implementation->geometry, surface_position.x, surface_position.y, radius + (line_width / 2.0f), 0.0f);
 
-        set_geometry_color(button->implementation->geometry, COLOR_YELLOW);
-        write_hexagon_geometry(button->implementation->geometry, surface_position, radius - (line_width / 2.0f), 0.0f);
+        set_geometry_color(button->implementation->geometry, COLOR_YELLOW, 255);
+        write_hexagon_geometry(button->implementation->geometry, surface_position.x, surface_position.y, radius - (line_width / 2.0f), 0.0f);
 
         render_geometry(button->implementation->geometry);
 

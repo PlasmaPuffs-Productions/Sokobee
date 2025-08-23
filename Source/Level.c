@@ -60,7 +60,7 @@ bool initialize_level(struct Level *const level, const struct LevelMetadata *con
         level->title = strdup(metadata->title);
 
         level->implementation = (struct LevelImplementation *)xmalloc(sizeof(struct LevelImplementation));
-        level->implementation->grid_geometry = create_geometry(0ULL, 0ULL);
+        level->implementation->grid_geometry = create_geometry();
 
         char *const json_string = load_text_file(metadata->path);
         if (!json_string) {
@@ -101,7 +101,7 @@ void deinitialize_level(struct Level *const level) {
                 return;
         }
 
-        xfree(level->title);
+        free(level->title);
         level->title = NULL;
 
         struct LevelImplementation *const implementation = level->implementation;
@@ -349,14 +349,20 @@ static void resize_level(struct Level *const level) {
                                 }
                         }
 
-                        set_geometry_color(implementation->grid_geometry, COLOR_GOLD);
+                        set_geometry_color(implementation->grid_geometry, COLOR_GOLD, 255);
                         write_hexagon_thickness_geometry(implementation->grid_geometry, position.x, position.y, tile_radius, thickness, thickness_mask);
 
-                        set_geometry_color(implementation->grid_geometry, COLOR_LIGHT_YELLOW);
-                        write_hexagon_geometry(implementation->grid_geometry, position, tile_radius + (line_width / 2.0f), 0.0f);
+                        set_geometry_color(implementation->grid_geometry, COLOR_LIGHT_YELLOW, 255);
+                        write_hexagon_geometry(implementation->grid_geometry, position.x, position.y, tile_radius + (line_width / 2.0f), 0.0f);
 
-                        set_geometry_color(implementation->grid_geometry, tile_type == SPOT ? COLOR_GOLD : COLOR_YELLOW);
-                        write_hexagon_geometry(implementation->grid_geometry, position, tile_radius - (line_width / 2.0f), 0.0f);
+                        // Don't use the color macros in expressions
+                        if (tile_type == SPOT) {
+                                set_geometry_color(implementation->grid_geometry, COLOR_GOLD, 255);
+                        } else {
+                                set_geometry_color(implementation->grid_geometry, COLOR_YELLOW, 255);
+                        }
+
+                        write_hexagon_geometry(implementation->grid_geometry, position.x, position.y, tile_radius - (line_width / 2.0f), 0.0f);
                 }
         }
 

@@ -86,7 +86,7 @@ static void setup_player_entity(struct Entity *const entity) {
 
         struct Player *const player = (struct Player *)entity->payload;
         player->rotation = orientation_angle(entity->orientation);
-        player->geometry = create_geometry(0ULL, 0ULL);
+        player->geometry = create_geometry();
         player->wings_angle = CLOSED_WINGS_ANGLE;
         player->has_queued_key = false;
         player->step_index = 0ULL;
@@ -446,30 +446,60 @@ static void update_player_entity(struct Entity *const entity, const double delta
 
         clear_geometry(player->geometry);
 
-        set_geometry_color(player->geometry, COLOR_DARK_BROWN);
-        write_circle_geometry(player->geometry, back_circle_position, outer_circle_radius, 32ULL);
-        write_circle_geometry(player->geometry, front_circle_position, outer_circle_radius, 32ULL);
+        set_geometry_color(player->geometry, COLOR_DARK_BROWN, 255);
+        write_circle_geometry(player->geometry, back_circle_position.x, back_circle_position.y, outer_circle_radius, 32ULL);
+        write_circle_geometry(player->geometry, front_circle_position.x, front_circle_position.y, outer_circle_radius, 32ULL);
 
-        set_geometry_color(player->geometry, COLOR_YELLOW);
-        write_circle_geometry(player->geometry, back_circle_position, inner_circle_radius, 32ULL);
-        write_circle_geometry(player->geometry, front_circle_position, inner_circle_radius, 32ULL);
+        set_geometry_color(player->geometry, COLOR_YELLOW, 255);
+        write_circle_geometry(player->geometry, back_circle_position.x, back_circle_position.y, inner_circle_radius, 32ULL);
+        write_circle_geometry(player->geometry, front_circle_position.x, front_circle_position.y, inner_circle_radius, 32ULL);
 
-        set_geometry_color(player->geometry, COLOR_DARK_BROWN);
-        write_rectangle_geometry(player->geometry, main_body_segment, -rotation);
-        write_circle_geometry(player->geometry, left_antenna_endpoints[1], line_width, 16ULL);
-        write_circle_geometry(player->geometry, right_antenna_endpoints[1], line_width, 16ULL);
-        write_bezier_curve_geometry(player->geometry, left_antenna_endpoints, left_antenna_control_points, line_width, 16ULL);
-        write_bezier_curve_geometry(player->geometry, right_antenna_endpoints, right_antenna_control_points, line_width, 16ULL);
-        write_triangle_geometry(player->geometry, stinger);
+        set_geometry_color(player->geometry, COLOR_DARK_BROWN, 255);
+        write_rectangle_geometry(player->geometry, main_body_segment.x, main_body_segment.y, main_body_segment.w, main_body_segment.h, -rotation);
+        write_circle_geometry(player->geometry, left_antenna_endpoints[1].x, left_antenna_endpoints[1].y, line_width, 16ULL);
+        write_circle_geometry(player->geometry, right_antenna_endpoints[1].x, right_antenna_endpoints[1].y, line_width, 16ULL);
 
-        set_geometry_color(player->geometry, COLOR_DARK_BROWN);
-        write_ellipse_geometry(player->geometry, left_wing_center, wings_border_radii, -rotation + left_wing_angle, 32ULL);
-        set_geometry_color(player->geometry, COLOR_LIGHT_YELLOW);
-        write_ellipse_geometry(player->geometry, left_wing_center, wings_filled_radii, -rotation + left_wing_angle, 32ULL);
-        set_geometry_color(player->geometry, COLOR_DARK_BROWN);
-        write_ellipse_geometry(player->geometry, right_wing_center, wings_border_radii, -rotation + right_wing_angle, 32ULL);
-        set_geometry_color(player->geometry, COLOR_LIGHT_YELLOW);
-        write_ellipse_geometry(player->geometry, right_wing_center, wings_filled_radii, -rotation + right_wing_angle, 32ULL);
+        write_bezier_curve_geometry(
+                player->geometry,
+                left_antenna_endpoints[0].x,
+                left_antenna_endpoints[0].y,
+                left_antenna_endpoints[1].x,
+                left_antenna_endpoints[1].y,
+                left_antenna_control_points[0].x,
+                left_antenna_control_points[0].y,
+                left_antenna_control_points[1].x,
+                left_antenna_control_points[1].y,
+                line_width,
+                16ULL
+        );
+
+        write_bezier_curve_geometry(
+                player->geometry,
+                right_antenna_endpoints[0].x,
+                right_antenna_endpoints[0].y,
+                right_antenna_endpoints[1].x,
+                right_antenna_endpoints[1].y,
+                right_antenna_control_points[0].x,
+                right_antenna_control_points[0].y,
+                right_antenna_control_points[1].x,
+                right_antenna_control_points[1].y,
+                line_width,
+                16ULL
+        );
+
+        write_triangle_geometry(player->geometry, stinger[0].x, stinger[0].y, stinger[1].x, stinger[1].y, stinger[2].x, stinger[2].y);
+
+        set_geometry_color(player->geometry, COLOR_DARK_BROWN, 255);
+        write_ellipse_geometry(player->geometry, left_wing_center.x, left_wing_center.y, wings_border_radii.x, wings_border_radii.y, -rotation + left_wing_angle, 32ULL);
+
+        set_geometry_color(player->geometry, COLOR_LIGHT_YELLOW, 255);
+        write_ellipse_geometry(player->geometry, left_wing_center.x, left_wing_center.y, wings_filled_radii.x, wings_filled_radii.y, -rotation + left_wing_angle, 32ULL);
+
+        set_geometry_color(player->geometry, COLOR_DARK_BROWN, 255);
+        write_ellipse_geometry(player->geometry, right_wing_center.x, right_wing_center.y, wings_border_radii.x, wings_border_radii.y, -rotation + right_wing_angle, 32ULL);
+
+        set_geometry_color(player->geometry, COLOR_LIGHT_YELLOW, 255);
+        write_ellipse_geometry(player->geometry, right_wing_center.x, right_wing_center.y, wings_filled_radii.x, wings_filled_radii.y, -rotation + right_wing_angle, 32ULL);
 
         render_geometry(player->geometry);
 }

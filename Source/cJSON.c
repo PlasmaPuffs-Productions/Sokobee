@@ -47,18 +47,6 @@
 
 #include "Memory.h"
 
-static inline void *_cJSON_malloc(const size_t size) {
-    return xmalloc(size);
-}
-
-static inline void *_cJSON_realloc(void *const pointer, const size_t size) {
-    return xrealloc(pointer, size);
-}
-
-static inline void _cJSON_free(void *const pointer) {
-    xfree(pointer);
-}
-
 #ifdef ENABLE_LOCALES
 #include <locale.h>
 #endif
@@ -185,9 +173,9 @@ static void * CJSON_CDECL internal_realloc(void *pointer, size_t size)
     return _cJSON_realloc(pointer, size);
 }
 #else
-#define internal_malloc _cJSON_malloc
-#define internal_free _cJSON_free
-#define internal_realloc _cJSON_realloc
+#define internal_malloc malloc
+#define internal_free free
+#define internal_realloc realloc
 #endif
 
 /* strlen of character literals resolved at compile time */

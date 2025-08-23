@@ -17,22 +17,21 @@ struct TextImplementation {
         enum TextAlignment alignment;
         float maximum_width;
         float line_spacing;
-        SDL_Color color;
         bool outdated_texture;
         SDL_Texture *texture;
         size_t texture_width;
         size_t texture_height;
+        uint8_t r;
+        uint8_t g;
+        uint8_t b;
+        uint8_t a;
 };
 
 static bool refresh_text(struct Text *const text);
 
-struct Text *load_text(const char *const string, const enum Font font, const SDL_Color color) {
+struct Text *create_text(const char *const string, const enum Font font) {
         struct Text *const text = (struct Text *)xmalloc(sizeof(struct Text));
-        if (!initialize_text(text, string, font, color)) {
-                send_message(ERROR, "Failed to load text: Failed to initialize text");
-                return NULL;
-        }
-
+        initialize_text(text, string, font);
         return text;
 }
 
@@ -46,7 +45,7 @@ void destroy_text(struct Text *const text) {
         xfree(text);
 }
 
-bool initialize_text(struct Text *const text, const char *const string, const enum Font font, const SDL_Color color) {
+void initialize_text(struct Text *const text, const char *const string, const enum Font font) {
         text->screen_position_x = 0.0f;
         text->screen_position_y = 0.0f;
         text->relative_offset_x = 0.0f;
@@ -64,19 +63,14 @@ bool initialize_text(struct Text *const text, const char *const string, const en
         text->implementation->alignment = TEXT_ALIGNMENT_LEFT;
         text->implementation->maximum_width = 0.0f;
         text->implementation->line_spacing = 0.0f;
-        text->implementation->color = color;
-        text->implementation->outdated_texture = false;
+        text->implementation->outdated_texture = true;
         text->implementation->texture = NULL;
         text->implementation->texture_width = 0ULL;
         text->implementation->texture_height = 0ULL;
-
-        if (!refresh_text(text)) {
-                send_message(ERROR, "Failed to load text: Failed to initially refresh text to generate texture");
-                deinitialize_text(text);
-                return false;
-        }
-
-        return true;
+        text->implementation->r = 255;
+        text->implementation->g = 255;
+        text->implementation->b = 255;
+        text->implementation->a = 255;
 }
 
 void deinitialize_text(struct Text *const text) {
@@ -103,7 +97,8 @@ void update_text(struct Text *const text) {
         if (text->implementation->outdated_texture) {
                 text->implementation->outdated_texture = false;
                 if (!refresh_text(text)) {
-                        send_message(ERROR, "Failed to refresh text: Keeping outdated texture for now");
+                        send_message(ERROR, "Failed to refresh text!");
+                        // TODO: Handle
                 }
         }
 
@@ -132,7 +127,7 @@ void update_text(struct Text *const text) {
                 renderer_flip &= SDL_FLIP_VERTICAL;
         }
 
-        SDL_SetTextureAlphaMod(text->implementation->texture, (Uint8)text->implementation->color.a);
+        SDL_SetTextureAlphaMod(text->implementation->texture, (Uint8)text->implementation->a);
         SDL_RenderCopyEx(get_context_renderer(), text->implementation->texture, NULL, &destination, text->rotation * 180.0f / (float)M_PI, NULL, renderer_flip);
 }
 
@@ -184,13 +179,17 @@ void set_text_line_spacing(struct Text *const text, const float line_spacing) {
         text->implementation->outdated_texture = true;
 }
 
-void set_text_color(struct Text *const text, const SDL_Color color) {
-        if (text->implementation->color.r == color.r && text->implementation->color.g == color.g && text->implementation->color.b == color.b) {
-                text->implementation->color.a = color.a;
+void set_text_color(struct Text *const text, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a) {
+        if (text->implementation->r == r && text->implementation->g == g && text->implementation->b == b) {
+                text->implementation->a = a;
                 return;
         }
 
-        text->implementation->color = color;
+        text->implementation->r = r;
+        text->implementation->g = g;
+        text->implementation->b = b;
+        text->implementation->a = a;
+
         text->implementation->outdated_texture = true;
 }
 
@@ -331,9 +330,9 @@ static bool refresh_text(struct Text *const text) {
 
         SDL_SetSurfaceBlendMode(new_surface, SDL_BLENDMODE_BLEND);
         const SDL_Color baked_color = (SDL_Color){
-                .r = text->implementation->color.r,
-                .g = text->implementation->color.g,
-                .b = text->implementation->color.b,
+                .r = text->implementation->r,
+                .g = text->implementation->g,
+                .b = text->implementation->b,
                 .a = 255
         };
 

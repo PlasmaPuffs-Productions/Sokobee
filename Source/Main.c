@@ -128,7 +128,6 @@ static void terminate(const int exit_code) {
         SDL_Quit();
 
         send_message(INFORMATION, "Exiting program with code \"EXIT_%s\"...", exit_code == EXIT_SUCCESS ? "SUCCESS" : "FAILURE");
-        flush_geometry_leaks();
         flush_memory_leaks();
         exit(exit_code);
 }

@@ -214,12 +214,14 @@ void finish_debug_frame_profiling(void) {
 void initialize_debug_panel(void) {
         const uint8_t debug_text_count = (uint8_t)(sizeof(debug_texts) / sizeof(debug_texts[0]));
         for (uint8_t debug_text_index = 0; debug_text_index < debug_text_count; ++debug_text_index) {
-                initialize_text(debug_texts[debug_text_index], "[Debug Text]", FONT_DEBUG, DEBUG_TEXT_COLOR);
-                debug_texts[debug_text_index]->relative_offset_y = -1.0f;
+                struct Text *const debug_text = debug_texts[debug_text_index];
+                initialize_text(debug_text, "[Debug Text]", FONT_DEBUG);
+                set_text_color(debug_text, COLOR_WHITE, 255);
+                debug_text->relative_offset_y = -1.0f;
         }
 
-        debug_panel_geometry = create_geometry(0ULL, 0ULL);
-        set_geometry_color(debug_panel_geometry, (SDL_Color){0, 0, 0, 128});
+        debug_panel_geometry = create_geometry();
+        set_geometry_color(debug_panel_geometry, COLOR_BLACK, 128);
         resize_debug_panel();
 }
 
@@ -270,15 +272,17 @@ static void resize_debug_panel(void) {
 
         const float debug_panel_width = debug_text_width + padding * 2.0f;
         const float debug_panel_height = debug_text_height * (float)debug_text_count + padding * 2.0f;
-        const SDL_FRect rectangle = (SDL_FRect){
-                .x =                           padding + debug_panel_width  / 2.0f,
-                .y = (float)drawable_height - (padding + debug_panel_height / 2.0f),
-                .w = debug_panel_width,
-                .h = debug_panel_height,
-        };
+
+        const float debug_panel_x =                           padding + debug_panel_width  / 2.0f;
+        const float debug_panel_y = (float)drawable_height - (padding + debug_panel_height / 2.0f);
 
         clear_geometry(debug_panel_geometry);
-        write_rounded_rectangle_geometry(debug_panel_geometry, rectangle, debug_text_height / 5.0f, 8ULL);
+        write_rounded_rectangle_geometry(
+                debug_panel_geometry,
+                debug_panel_x, debug_panel_y,
+                debug_panel_width, debug_panel_height,
+                debug_text_height / 5.0f, 8ULL
+        );
 
         for (uint8_t debug_text_index = 0; debug_text_index < debug_text_count; ++debug_text_index) {
                 const uint8_t reversed_index = debug_text_count - debug_text_index - 1;

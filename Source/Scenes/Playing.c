@@ -67,17 +67,11 @@ static void quit_callback(void *const data) {
 }
 
 static bool initialize_playing_scene(void) {
-        if (!initialize_text(&level_number_label, "Level: 0", FONT_HEADER_2, COLOR_YELLOW)) {
-                send_message(ERROR, "Failed to initialize playing scene: Failed to load level number text label");
-                terminate_playing_scene();
-                return false;
-        }
+        initialize_text(&level_number_label, "Level: 0", FONT_HEADER_2);
+        set_text_color(&level_number_label, COLOR_YELLOW, 255);
 
-        if (!initialize_text(&move_count_label, "Moves: 0", FONT_HEADER_1, COLOR_YELLOW)) {
-                send_message(ERROR, "Failed to initialize playing scene: Failed to load move count text label");
-                terminate_playing_scene();
-                return false;
-        }
+        initialize_text(&move_count_label, "Moves: 0", FONT_HEADER_1);
+        set_text_color(&move_count_label, COLOR_YELLOW, 255);
 
         initialize_button(&undo_button, true);
         undo_button.grid_anchor_x = 1.0f;

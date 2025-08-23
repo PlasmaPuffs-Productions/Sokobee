@@ -67,17 +67,19 @@
 // Color Palette
 // ================================================================================================
 
-#define COLOR_TRANSPARENT  (SDL_Color){0,   0,   0,   0}
+#define COLOR_BLACK          0,   0,   0
 
-#define COLOR_YELLOW       (SDL_Color){240, 170, 35,  255}
+#define COLOR_WHITE        255, 255, 255
 
-#define COLOR_LIGHT_YELLOW (SDL_Color){255, 220, 120, 255}
+#define COLOR_YELLOW       240, 170,  35
 
-#define COLOR_GOLD         (SDL_Color){190, 140, 35,  255}
+#define COLOR_LIGHT_YELLOW 255, 220, 120
 
-#define COLOR_BROWN        (SDL_Color){50,  35,  15,  255}
+#define COLOR_GOLD         190, 140,  35
 
-#define COLOR_DARK_BROWN   (SDL_Color){35,  20,  0,   255}
+#define COLOR_BROWN         50,  35,  15
+
+#define COLOR_DARK_BROWN    35,  20,   0
 
 // ================================================================================================
 // Logging
@@ -138,19 +140,15 @@ enum MessageSeverity {
 // ================================================================================================
 
 static inline char *load_text_file(const char *const path) {
-        send_message(VERBOSE, "Loading text file \"%s\"...", path);
-
         FILE *const file = fopen(path, "rb");
         if (!file) {
                 send_message(ERROR, "Failed to load text file \"%s\": %s", path, strerror(errno));
                 return NULL;
         }
 
-        fseek(file, 0, SEEK_END);
+        fseek(file, 0L, SEEK_END);
         const size_t size = (size_t)ftell(file);
         rewind(file);
-
-        send_message(VERBOSE, "Text file \"%s\" has buffer size of %lld bytes", path, size);
 
         char *const buffer = (char *)xmalloc(size + 1ULL);
         if (fread(buffer, 1ULL, size, file) != size) {
@@ -163,7 +161,6 @@ static inline char *load_text_file(const char *const path) {
         buffer[size] = '\0';
         fclose(file);
 
-        send_message(VERBOSE, "Loaded text file \"%s\" successfully (don't forget to free the returned buffer)", path);
         return buffer;
 }
 
@@ -181,15 +178,15 @@ static inline char *load_text_file(const char *const path) {
 
 #define RANDOM_NUMBER(minimum, maximum)      ((size_t)minimum + ((float)rand() / (float)RAND_MAX) * ((size_t)maximum - (size_t)minimum))
 
-static inline void rotate_point(float *const out_x, float *const out_y, const float pivot_x, const float pivot_y, const float rotation) {
-        if (rotation == 0.0f || out_x == NULL || out_y == NULL) {
+static inline void rotate_point(float *const px, float *const py, const float ox, const float oy, const float rotation) {
+        if (rotation == 0.0f || px == NULL || py == NULL) {
                 return;
         }
 
-        const float s = sinf(rotation);
-        const float c = cosf(rotation);
-        const float dx = *out_x - pivot_x;
-        const float dy = *out_y - pivot_y;
-        *out_x = pivot_x + dx * c - dy * s;
-        *out_y = pivot_y + dx * s + dy * c;
+        const float sin = sinf(rotation);
+        const float cos = cosf(rotation);
+        const float dx = *px - ox;
+        const float dy = *py - oy;
+        *px = ox + dx * cos - dy * sin;
+        *py = oy + dx * sin + dy * cos;
 }

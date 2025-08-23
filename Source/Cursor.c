@@ -72,13 +72,8 @@ bool initialize_cursor(void) {
 
         SDL_SetCursor(cursors[current_cursor]);
 
-        tooltip_geometry = create_geometry(0ULL, 0ULL);
-
-        if (!initialize_text(&tooltip_text, "[tooltip]", FONT_CAPTION, COLOR_TRANSPARENT)) {
-                send_message(ERROR, "Failed to initialize cursor: Failed to initialize tooltip text");
-                terminate_cursor();
-                return false;
-        }
+        tooltip_geometry = create_geometry();
+        initialize_text(&tooltip_text, "[tooltip]", FONT_CAPTION);
 
         initialize_animation(&tooltip_fade, 2ULL);
 
@@ -160,11 +155,7 @@ void update_cursor(const double delta_time) {
 
         if (current_tooltip_alpha != animated_tooltip_alpha) {
                 current_tooltip_alpha = animated_tooltip_alpha;
-
-                SDL_Color text_color = COLOR_YELLOW;
-                text_color.a = (int)lroundf(current_tooltip_alpha * 255.0f);
-
-                set_text_color(&tooltip_text, text_color);
+                set_text_color(&tooltip_text, COLOR_YELLOW, (uint8_t)lroundf(current_tooltip_alpha * 255.0f));
         }
 
         int mouse_x;
@@ -205,16 +196,16 @@ void update_cursor(const double delta_time) {
                 tooltip_center_y = height * 0.5f;
         }
 
-        const SDL_FRect tooltip_rectangle = {
-                .x = tooltip_center_x,
-                .y = tooltip_center_y,
-                .w = width,
-                .h = height
-        };
-
         clear_geometry(tooltip_geometry);
-        set_geometry_color(tooltip_geometry, (SDL_Color){0, 0, 0, (int)lroundf(current_tooltip_alpha * 255.0f * 0.75f)});
-        write_rounded_rectangle_geometry(tooltip_geometry, tooltip_rectangle, padding / 4.0f, 8ULL);
+        set_geometry_color(tooltip_geometry, COLOR_BLACK, (uint8_t)lroundf(current_tooltip_alpha * 255.0f * 0.75f));
+
+        write_rounded_rectangle_geometry(
+                tooltip_geometry,
+                tooltip_center_x, tooltip_center_y,
+                width, height,
+                padding / 4.0f, 8ULL
+        );
+
         render_geometry(tooltip_geometry);
 
         tooltip_text.absolute_offset_x = tooltip_center_x - width  / 2.0f + padding;
