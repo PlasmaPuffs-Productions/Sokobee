@@ -301,30 +301,36 @@ enum HexagonThicknessMask {
         HEXAGON_THICKNESS_MASK_ALL    = HEXAGON_THICKNESS_MASK_LEFT | HEXAGON_THICKNESS_MASK_BOTTOM | HEXAGON_THICKNESS_MASK_RIGHT
 };
 
-static inline void write_hexagon_thickness_geometry(struct Geometry *const geometry, const float x, const float y, const float radius, const float thickness, const enum HexagonThicknessMask thickness_mask) {
+static inline void write_hexagon_thickness_geometry(
+        struct Geometry *const geometry,
+        const float x, const float y,
+        const float radius,
+        const float thickness,
+        const enum HexagonThicknessMask thickness_mask
+) {
         if (thickness_mask == HEXAGON_THICKNESS_MASK_NONE) {
                 return;
         }
 
-        const SDL_FPoint a1 = {x - radius,        y};
-        const SDL_FPoint a2 = {x - radius / 2.0f, y + radius * sqrtf(3.0f) / 2.0f};
-        const SDL_FPoint a3 = {x + radius / 2.0f, y + radius * sqrtf(3.0f) / 2.0f};
-        const SDL_FPoint a4 = {x + radius,        y};
+        const float ax1 = x - radius,        ay1 = y;
+        const float ax2 = x - radius / 2.0f, ay2 = y + radius * sqrtf(3.0f) / 2.0f;
+        const float ax3 = x + radius / 2.0f, ay3 = y + radius * sqrtf(3.0f) / 2.0f;
+        const float ax4 = x + radius,        ay4 = y;
 
-        const SDL_FPoint b1 = {a1.x, a1.y + thickness};
-        const SDL_FPoint b2 = {a2.x, a2.y + thickness};
-        const SDL_FPoint b3 = {a3.x, a3.y + thickness};
-        const SDL_FPoint b4 = {a4.x, a4.y + thickness};
+#define THICKER thickness +
 
-        if (thickness_mask & HEXAGON_THICKNESS_MASK_LEFT) {
-                write_quadrilateral_geometry(geometry, a1.x, a1.y, a2.x, a2.y, b2.x, b2.y, b1.x, b1.y);
+        if ((thickness_mask & HEXAGON_THICKNESS_MASK_LEFT) == HEXAGON_THICKNESS_MASK_LEFT) {
+                write_quadrilateral_geometry(geometry, ax1, ay1, ax2, ay2, ax2, THICKER ay2, ax1, THICKER ay1);
         }
 
-        if (thickness_mask & HEXAGON_THICKNESS_MASK_BOTTOM) {
-                write_quadrilateral_geometry(geometry, a2.x, a2.y, a3.x, a3.y, b3.x, b3.y, b2.x, b2.y);
+        if ((thickness_mask & HEXAGON_THICKNESS_MASK_BOTTOM) == HEXAGON_THICKNESS_MASK_BOTTOM) {
+                write_quadrilateral_geometry(geometry, ax2, ay2, ax3, ay3, ax3, THICKER ay3, ax2, THICKER ay2);
         }
 
-        if (thickness_mask & HEXAGON_THICKNESS_MASK_RIGHT) {
-                write_quadrilateral_geometry(geometry, a3.x, a3.y, a4.x, a4.y, b4.x, b4.y, b3.x, b3.y);
+        if ((thickness_mask & HEXAGON_THICKNESS_MASK_RIGHT) == HEXAGON_THICKNESS_MASK_RIGHT) {
+                write_quadrilateral_geometry(geometry, ax3, ay3, ax4, ay4, ax4, THICKER ay4, ax3, THICKER ay3);
         }
+
+#undef THICKER
+
 }

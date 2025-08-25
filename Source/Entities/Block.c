@@ -65,20 +65,17 @@ static void update_block_entity(struct Entity *const entity, const double delta_
 
         const float tile_radius = entity->grid_metrics->tile_radius * block->scale;
         const float thickness = tile_radius / 5.0f;
-        const SDL_FPoint position = (SDL_FPoint){
-                .x = entity->position.x + entity->shake_offset.x, 
-                .y = entity->position.y + entity->shake_offset.y
-        };
+
+        const float x = entity->position.x + entity->shake_offset.x;
+        const float y = entity->position.y + entity->shake_offset.y - thickness / 2.0f;
 
         clear_geometry(block->geometry);
 
-        // TODO: Use 'write_hexagon_thickness()' instead of this
         set_geometry_color(block->geometry, COLOR_GOLD, COLOR_OPAQUE);
-        write_rectangle_geometry(block->geometry, position.x, position.y, tile_radius, thickness, 0.0f);
-        write_hexagon_geometry(block->geometry, position.x, position.y + thickness / 2.0f, tile_radius / 2.0f, 0.0f);
+        write_hexagon_thickness_geometry(block->geometry, x, y, tile_radius / 2.0f, thickness, HEXAGON_THICKNESS_MASK_ALL);
 
         set_geometry_color(block->geometry, COLOR_LIGHT_YELLOW, COLOR_OPAQUE);
-        write_hexagon_geometry(block->geometry, position.x, position.y - thickness / 2.0f, tile_radius / 2.0f, 0.0f);
+        write_hexagon_geometry(block->geometry, x, y, tile_radius / 2.0f, 0.0f);
 
         render_geometry(block->geometry);
 }

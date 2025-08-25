@@ -778,7 +778,7 @@ void write_rounded_triangle_geometry(
                 bisector_x /= bisector_length;
                 bisector_y /= bisector_length;
 
-                float sine = sinf(theta / 2.0f);
+                const float sine = sinf(theta / 2.0f);
                 if (sine == 0.0f) {
                         continue;
                 }

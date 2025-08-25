@@ -327,31 +327,29 @@ bool update_button(struct Button *const button, const double delta_time) {
         const float line_width = radius / 5.0f;
         const float height_offset = button->implementation->animation_offset * thickness;
 
-        const SDL_FPoint surface_position = (SDL_FPoint){
-                .x = x,
-                .y = y - height_offset
-        };
+        const float surface_x = x;
+        const float surface_y = y - height_offset;
 
         set_geometry_color(button->implementation->geometry, COLOR_GOLD, COLOR_OPAQUE);
-        write_hexagon_thickness_geometry(button->implementation->geometry, surface_position.x, surface_position.y, radius, thickness, button->thickness_mask);
+        write_hexagon_thickness_geometry(button->implementation->geometry, surface_x, surface_y, radius + line_width / 2.0f, thickness, button->thickness_mask);
 
         set_geometry_color(button->implementation->geometry, COLOR_LIGHT_YELLOW, COLOR_OPAQUE);
-        write_hexagon_geometry(button->implementation->geometry, surface_position.x, surface_position.y, radius + (line_width / 2.0f), 0.0f);
+        write_hexagon_geometry(button->implementation->geometry, surface_x, surface_y, radius + line_width / 2.0f, 0.0f);
 
         set_geometry_color(button->implementation->geometry, COLOR_YELLOW, COLOR_OPAQUE);
-        write_hexagon_geometry(button->implementation->geometry, surface_position.x, surface_position.y, radius - (line_width / 2.0f), 0.0f);
+        write_hexagon_geometry(button->implementation->geometry, surface_x, surface_y, radius - line_width / 2.0f, 0.0f);
 
         render_geometry(button->implementation->geometry);
 
         if (button->implementation->surface_icon) {
-                set_icon_position(button->implementation->surface_icon, surface_position.x, surface_position.y);
+                set_icon_position(button->implementation->surface_icon, surface_x, surface_y);
                 set_icon_size(button->implementation->surface_icon, radius);
                 update_icon(button->implementation->surface_icon);
         }
 
         if (button->implementation->surface_text) {
-                button->implementation->surface_text->absolute_offset_x = surface_position.x;
-                button->implementation->surface_text->absolute_offset_y = surface_position.y;
+                button->implementation->surface_text->absolute_offset_x = surface_x;
+                button->implementation->surface_text->absolute_offset_y = surface_y;
                 button->implementation->surface_text->scale_x = button->scale * radius / 100.0f;
                 button->implementation->surface_text->scale_y = button->scale * radius / 100.0f;
                 update_text(button->implementation->surface_text);

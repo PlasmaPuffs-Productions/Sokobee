@@ -311,6 +311,7 @@ static void resize_level(struct Level *const level) {
 
         const size_t tile_count = (size_t)level->columns * (size_t)level->rows;
 
+        set_geometry_color(implementation->grid_geometry, COLOR_GOLD, COLOR_OPAQUE);
         for (uint8_t row = 0; row < level->rows; ++row) {
                 for (uint8_t column = 0; column < level->columns; ++column) {
                         const enum TileType tile_type = implementation->tiles[(size_t)row * (size_t)level->columns + (size_t)column];
@@ -318,8 +319,8 @@ static void resize_level(struct Level *const level) {
                                 continue;
                         }
 
-                        SDL_FPoint position = (SDL_FPoint){0.0f, 0.0f};
-                        get_grid_tile_position(grid_metrics, (size_t)column, (size_t)row, &position.x, &position.y);
+                        float x, y;
+                        get_grid_tile_position(grid_metrics, (size_t)column, (size_t)row, &x, &y);
 
                         enum HexagonThicknessMask thickness_mask = HEXAGON_THICKNESS_MASK_ALL;
                         size_t neighbor_column;
@@ -349,11 +350,22 @@ static void resize_level(struct Level *const level) {
                                 }
                         }
 
-                        set_geometry_color(implementation->grid_geometry, COLOR_GOLD, COLOR_OPAQUE);
-                        write_hexagon_thickness_geometry(implementation->grid_geometry, position.x, position.y, tile_radius, thickness, thickness_mask);
+                        write_hexagon_thickness_geometry(implementation->grid_geometry, x, y, tile_radius + line_width / 2.0f, thickness, thickness_mask);
+                }
+        }
+
+        for (uint8_t row = 0; row < level->rows; ++row) {
+                for (uint8_t column = 0; column < level->columns; ++column) {
+                        const enum TileType tile_type = implementation->tiles[(size_t)row * (size_t)level->columns + (size_t)column];
+                        if (tile_type == EMPTY) {
+                                continue;
+                        }
+
+                        float x, y;
+                        get_grid_tile_position(grid_metrics, (size_t)column, (size_t)row, &x, &y);
 
                         set_geometry_color(implementation->grid_geometry, COLOR_LIGHT_YELLOW, COLOR_OPAQUE);
-                        write_hexagon_geometry(implementation->grid_geometry, position.x, position.y, tile_radius + (line_width / 2.0f), 0.0f);
+                        write_hexagon_geometry(implementation->grid_geometry, x, y, tile_radius + line_width / 2.0f, 0.0f);
 
                         // Don't use the color macros in expressions
                         if (tile_type == SPOT) {
@@ -362,7 +374,7 @@ static void resize_level(struct Level *const level) {
                                 set_geometry_color(implementation->grid_geometry, COLOR_YELLOW, COLOR_OPAQUE);
                         }
 
-                        write_hexagon_geometry(implementation->grid_geometry, position.x, position.y, tile_radius - (line_width / 2.0f), 0.0f);
+                        write_hexagon_geometry(implementation->grid_geometry, x, y, tile_radius - line_width / 2.0f, 0.0f);
                 }
         }
 
