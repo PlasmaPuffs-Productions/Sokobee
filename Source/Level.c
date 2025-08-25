@@ -349,17 +349,17 @@ static void resize_level(struct Level *const level) {
                                 }
                         }
 
-                        set_geometry_color(implementation->grid_geometry, COLOR_GOLD, 255);
+                        set_geometry_color(implementation->grid_geometry, COLOR_GOLD, COLOR_OPAQUE);
                         write_hexagon_thickness_geometry(implementation->grid_geometry, position.x, position.y, tile_radius, thickness, thickness_mask);
 
-                        set_geometry_color(implementation->grid_geometry, COLOR_LIGHT_YELLOW, 255);
+                        set_geometry_color(implementation->grid_geometry, COLOR_LIGHT_YELLOW, COLOR_OPAQUE);
                         write_hexagon_geometry(implementation->grid_geometry, position.x, position.y, tile_radius + (line_width / 2.0f), 0.0f);
 
                         // Don't use the color macros in expressions
                         if (tile_type == SPOT) {
-                                set_geometry_color(implementation->grid_geometry, COLOR_GOLD, 255);
+                                set_geometry_color(implementation->grid_geometry, COLOR_GOLD, COLOR_OPAQUE);
                         } else {
-                                set_geometry_color(implementation->grid_geometry, COLOR_YELLOW, 255);
+                                set_geometry_color(implementation->grid_geometry, COLOR_YELLOW, COLOR_OPAQUE);
                         }
 
                         write_hexagon_geometry(implementation->grid_geometry, position.x, position.y, tile_radius - (line_width / 2.0f), 0.0f);

@@ -34,8 +34,6 @@ const struct SceneAPI *get_main_menu_scene_API(void) {
 
 #define LEVEL_BUTTON_SCALE 1.5f
 
-static struct Button test_button = {};
-
 static struct GridMetrics levels_grid_metrics = {};
 static struct Button *buttons = NULL;
 

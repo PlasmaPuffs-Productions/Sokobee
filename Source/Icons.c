@@ -39,7 +39,7 @@ struct Icon *create_icon(const enum IconType type) {
         icon->y = 0.0f;
 
         icon->geometry = create_geometry();
-        set_geometry_color(icon->geometry, COLOR_BROWN, 255);
+        set_geometry_color(icon->geometry, COLOR_BROWN, COLOR_OPAQUE);
 
         icon->outdated_geometry = true;
         return icon;
@@ -114,7 +114,7 @@ static void write_play_icon_geometry(struct Icon *const icon) {
         transform_icon_point(icon, &x3, &y3);
 
         clear_geometry(icon->geometry);
-        write_rounded_triangle_geometry(icon->geometry, x1, y1, x2, y2, x3, y3, icon->size / 15.0f, 8ULL);
+        write_rounded_triangle_geometry(icon->geometry, x1, y1, x2, y2, x3, y3, icon->size / 15.0f);
 }
 
 static void write_undo_icon_geometry(struct Icon *const icon) {
@@ -135,11 +135,11 @@ static void write_undo_icon_geometry(struct Icon *const icon) {
         transform_icon_point(icon, &cx2, &cy2);
 
         clear_geometry(icon->geometry);
-        write_rounded_triangle_geometry(icon->geometry, x1, y1, x2, y2, x3, y3, icon->size / 20.0f, 8ULL);
-        write_bezier_curve_geometry(icon->geometry, px1, py1, px2, py2, cx1, cy1, cx2, cy2, icon->size / 10.0f, 32ULL);
+        write_rounded_triangle_geometry(icon->geometry, x1, y1, x2, y2, x3, y3, icon->size / 20.0f);
+        write_bezier_curve_geometry(icon->geometry, px1, py1, px2, py2, cx1, cy1, cx2, cy2, icon->size / 10.0f);
 
         // Give the endpoint that isn't touching the triangle a round line cap
-        write_circle_geometry(icon->geometry, px2, py2, icon->size / 20.0f, 8ULL);
+        write_circle_geometry(icon->geometry, px2, py2, icon->size / 20.0f);
 }
 
 static void write_redo_icon_geometry(struct Icon *const icon) {
@@ -163,11 +163,11 @@ static void write_redo_icon_geometry(struct Icon *const icon) {
         transform_icon_point(icon, &cx2, &cy2);
 
         clear_geometry(icon->geometry);
-        write_rounded_triangle_geometry(icon->geometry, x1, y1, x2, y2, x3, y3, icon->size / 20.0f, 8ULL);
-        write_bezier_curve_geometry(icon->geometry, px1, py1, px2, py2, cx1, cy1, cx2, cy2, icon->size / 10.0f, 32ULL);
+        write_rounded_triangle_geometry(icon->geometry, x1, y1, x2, y2, x3, y3, icon->size / 20.0f);
+        write_bezier_curve_geometry(icon->geometry, px1, py1, px2, py2, cx1, cy1, cx2, cy2, icon->size / 10.0f);
 
         // Give the endpoint that isn't touching the triangle a round line cap
-        write_circle_geometry(icon->geometry, px2, py2, icon->size / 20.0f, 8ULL);
+        write_circle_geometry(icon->geometry, px2, py2, icon->size / 20.0f);
 
 #undef FLIP
 
@@ -183,14 +183,18 @@ static void write_restart_icon_geometry(struct Icon *const icon) {
         transform_icon_point(icon, &x2, &y2);
         transform_icon_point(icon, &x3, &y3);
 
-        // Arc Endpoint
-        const float px = icon->x + icon->size / 3.0f * cosf((float)M_PI / 8.0f);
-        const float py = icon->y + icon->size / 3.0f * sinf((float)M_PI / 8.0f);
-
         clear_geometry(icon->geometry);
-        write_rounded_triangle_geometry(icon->geometry, x1, y1, x2, y2, x3, y3, icon->size / 25.0f, 8ULL);
-        write_arc_outline_geometry(icon->geometry, icon->x, icon->y, icon->size / 3.0f, icon->size / 10.0f, (float)M_PI / -4.0f, (float)M_PI / 8.0f, true, 32ULL);
-        write_circle_geometry(icon->geometry, px, py, icon->size / 20.0f, 8ULL);
+        write_rounded_triangle_geometry(icon->geometry, x1, y1, x2, y2, x3, y3, icon->size / 25.0f);
+        write_circular_arc_outline_geometry(
+                icon->geometry,
+                icon->x, icon->y,
+                icon->size / 3.0f,
+                icon->size / 10.0f,
+                (float)M_PI / -4.0f,
+                (float)M_PI / 8.0f,
+                true,
+                LINE_CAP_END
+        );
 
 #undef FLIP
 
@@ -276,18 +280,20 @@ static void write_exit_icon_geometry(struct Icon *const icon) {
         };
 
         clear_geometry(icon->geometry);
-        write_rectangle_geometry(icon->geometry, top_line.x, top_line.y, top_line.w, top_line.h, 0.0f);
-        write_rectangle_geometry(icon->geometry, bottom_line.x, bottom_line.y, bottom_line.w, bottom_line.h, 0.0f);
-        write_rectangle_geometry(icon->geometry, left_line.x, left_line.y, left_line.w, left_line.h, 0.0f);
-        write_rectangle_geometry(icon->geometry, top_right_line.x, top_right_line.y, top_right_line.w, top_right_line.h, 0.0f);
-        write_rectangle_geometry(icon->geometry, bottom_right_line.x, bottom_right_line.y, bottom_right_line.w, bottom_right_line.h, 0.0f);
-        write_rectangle_geometry(icon->geometry, arrow_line.x, arrow_line.y, arrow_line.w, arrow_line.h, 0.0f);
-        write_circle_geometry(icon->geometry, cx,cy, line_width / 2.0f, 8ULL);
-        write_circle_geometry(icon->geometry, tlx, tly, line_width / 2.0f, 8ULL);
-        write_circle_geometry(icon->geometry, trx, try, line_width / 2.0f, 8ULL);
-        write_circle_geometry(icon->geometry, blx, bly, line_width / 2.0f, 8ULL);
-        write_circle_geometry(icon->geometry, brx, bry, line_width / 2.0f, 8ULL);
-        write_circle_geometry(icon->geometry, tox, toy, line_width / 2.0f, 8ULL);
-        write_circle_geometry(icon->geometry, box, boy, line_width / 2.0f, 8ULL);
-        write_rounded_triangle_geometry(icon->geometry, x1, y1, x2, y2, x3, y3, line_width / 2.0f, 8ULL);
+
+        write_line_geometry(icon->geometry, tlx, tly + line_width / 2.0f, blx, bly - line_width / 2.0f, line_width, LINE_CAP_NONE);
+        write_line_geometry(icon->geometry, tlx + line_width / 2.0f, tly, trx - line_width / 2.0f, try, line_width, LINE_CAP_NONE);
+        write_line_geometry(icon->geometry, blx + line_width / 2.0f, bly, brx - line_width / 2.0f, bry, line_width, LINE_CAP_NONE);
+
+        write_line_geometry(icon->geometry, trx, try + line_width / 2.0f, tox, toy - line_width / 2.0f, line_width, LINE_CAP_END);
+        write_line_geometry(icon->geometry, brx, bry - line_width / 2.0f, box, boy + line_width / 2.0f, line_width, LINE_CAP_END);
+
+        write_line_geometry(icon->geometry, cx, cy, cx - line_width / 2.0f + (trx - tlx), cy, line_width, LINE_CAP_START);
+
+        write_circular_arc_geometry(icon->geometry, tlx + line_width / 2.0f, tly + line_width / 2.0f, line_width, -M_PI_2, M_PI, true);
+        write_circular_arc_geometry(icon->geometry, blx + line_width / 2.0f, bly - line_width / 2.0f, line_width, -M_PI, M_PI_2, true);
+        write_circular_arc_geometry(icon->geometry, trx - line_width / 2.0f, try + line_width / 2.0f, line_width, 0.0f, M_PI_2 * 3.0f, true);
+        write_circular_arc_geometry(icon->geometry, brx - line_width / 2.0f, bry - line_width / 2.0f, line_width, M_PI_2, M_PI * 2.0f, true);
+
+        write_rounded_triangle_geometry(icon->geometry, x1, y1, x2, y2, x3, y3, line_width / 2.0f);
 }

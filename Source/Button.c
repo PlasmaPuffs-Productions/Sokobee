@@ -332,13 +332,13 @@ bool update_button(struct Button *const button, const double delta_time) {
                 .y = y - height_offset
         };
 
-        set_geometry_color(button->implementation->geometry, COLOR_GOLD, 255);
+        set_geometry_color(button->implementation->geometry, COLOR_GOLD, COLOR_OPAQUE);
         write_hexagon_thickness_geometry(button->implementation->geometry, surface_position.x, surface_position.y, radius, thickness, button->thickness_mask);
 
-        set_geometry_color(button->implementation->geometry, COLOR_LIGHT_YELLOW, 255);
+        set_geometry_color(button->implementation->geometry, COLOR_LIGHT_YELLOW, COLOR_OPAQUE);
         write_hexagon_geometry(button->implementation->geometry, surface_position.x, surface_position.y, radius + (line_width / 2.0f), 0.0f);
 
-        set_geometry_color(button->implementation->geometry, COLOR_YELLOW, 255);
+        set_geometry_color(button->implementation->geometry, COLOR_YELLOW, COLOR_OPAQUE);
         write_hexagon_geometry(button->implementation->geometry, surface_position.x, surface_position.y, radius - (line_width / 2.0f), 0.0f);
 
         render_geometry(button->implementation->geometry);

@@ -73,11 +73,11 @@ static void update_block_entity(struct Entity *const entity, const double delta_
         clear_geometry(block->geometry);
 
         // TODO: Use 'write_hexagon_thickness()' instead of this
-        set_geometry_color(block->geometry, COLOR_GOLD, 255);
+        set_geometry_color(block->geometry, COLOR_GOLD, COLOR_OPAQUE);
         write_rectangle_geometry(block->geometry, position.x, position.y, tile_radius, thickness, 0.0f);
         write_hexagon_geometry(block->geometry, position.x, position.y + thickness / 2.0f, tile_radius / 2.0f, 0.0f);
 
-        set_geometry_color(block->geometry, COLOR_LIGHT_YELLOW, 255);
+        set_geometry_color(block->geometry, COLOR_LIGHT_YELLOW, COLOR_OPAQUE);
         write_hexagon_geometry(block->geometry, position.x, position.y - thickness / 2.0f, tile_radius / 2.0f, 0.0f);
 
         render_geometry(block->geometry);

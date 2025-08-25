@@ -1,6 +1,7 @@
 #include "Geometry.h"
 
 #include <math.h>
+#include <float.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -18,6 +19,8 @@
 #define INDEX_STRIDE           (sizeof(uint16_t))
 #define VERTEX_POSITION_STRIDE (sizeof(float) * 2ULL)
 #define VERTEX_COLOR_STRIDE    (sizeof(uint8_t) * 4ULL)
+
+#define SEGMENT_LENGTH 4.0f
 
 static size_t tracked_vertex_count = 0ULL;
 static size_t tracked_index_count = 0ULL;
@@ -149,6 +152,69 @@ static inline uint16_t add_geometry_vertex(struct Geometry *const geometry, cons
         return (uint16_t)geometry->vertex_count++;
 }
 
+void write_line_geometry(
+        struct Geometry *const geometry,
+        const float x1, const float y1,
+        const float x2, const float y2,
+        const float line_width,
+        const enum LineCap rounded_caps
+) {
+        const float dx = x2 - x1;
+        const float dy = y2 - y1;
+        const float length = sqrtf(dx * dx + dy * dy);
+        if (length == 0.0f) {
+                return;
+        }
+
+        const float nx = (-dy / length) * line_width / 2.0f;
+        const float ny = ( dx / length) * line_width / 2.0f;
+        write_quadrilateral_geometry(
+                geometry,
+                x1 + nx, y1 + ny,
+                x2 + nx, y2 + ny,
+                x2 - nx, y2 - ny,
+                x1 - nx, y1 - ny
+        );
+
+        const float rotation = atan2f(y2 - y1, x2 - x1);
+
+        if ((rounded_caps & LINE_CAP_START) == LINE_CAP_START || (rounded_caps & LINE_CAP_BOTH) == LINE_CAP_BOTH) {
+                write_circular_arc_geometry(geometry, x1, y1, line_width / 2.0f, rotation + (float)M_PI_2, rotation - (float)M_PI_2, false);
+        }
+
+        if ((rounded_caps & LINE_CAP_END) == LINE_CAP_END || (rounded_caps & LINE_CAP_BOTH) == LINE_CAP_BOTH) {
+                write_circular_arc_geometry(geometry, x2, y2, line_width / 2.0f, rotation + (float)M_PI_2, rotation - (float)M_PI_2, true);
+        }
+}
+
+void write_rectangle_geometry(
+        struct Geometry *const geometry,
+        const float x, const float y,
+        const float w, const float h,
+        const float rotation
+) {
+        const float half_w = w / 2.0f;
+        const float half_h = h / 2.0f;
+
+        // Top Left
+        float x1 = x - half_w, y1 = y - half_h;
+        rotate_point(&x1, &y1, x, y, rotation);
+
+        // Top Right
+        float x2 = x + half_w, y2 = y - half_h;
+        rotate_point(&x2, &y2, x, y, rotation);
+
+        // Bottom Right
+        float x3 = x + half_w, y3 = y + half_h;
+        rotate_point(&x3, &y3, x, y, rotation);
+
+        // Bottom Left
+        float x4 = x - half_w, y4 = y + half_h;
+        rotate_point(&x4, &y4, x, y, rotation);
+
+        write_quadrilateral_geometry(geometry, x1, y1, x2, y2, x3, y3, x4, y4);
+}
+
 void write_triangle_geometry(
         struct Geometry *const geometry,
         const float x1, const float y1,
@@ -187,92 +253,79 @@ void write_quadrilateral_geometry(
         geometry->indices[geometry->index_count++] = index4;
 }
 
-void write_rectangle_geometry(
+void write_circle_geometry(
         struct Geometry *const geometry,
         const float x, const float y,
-        const float w, const float h,
-        const float rotation
+        const float radius
 ) {
-        const float half_w = w / 2.0f;
-        const float half_h = h / 2.0f;
-
-        // Top Left
-        float x1 = x - half_w, y1 = y - half_h;
-        rotate_point(&x1, &y1, x, y, rotation);
-
-        // Top Right
-        float x2 = x + half_w, y2 = y - half_h;
-        rotate_point(&x2, &y2, x, y, rotation);
-
-        // Bottom Right
-        float x3 = x + half_w, y3 = y + half_h;
-        rotate_point(&x3, &y3, x, y, rotation);
-
-        // Bottom Left
-        float x4 = x - half_w, y4 = y + half_h;
-        rotate_point(&x4, &y4, x, y, rotation);
-
-        write_quadrilateral_geometry(geometry, x1, y1, x2, y2, x3, y3, x4, y4);
-}
-
-void write_line_geometry(
-        struct Geometry *const geometry,
-        const float x1, const float y1,
-        const float x2, const float y2,
-        const float line_width
-) {
-        const float dx = x2 - x1;
-        const float dy = y2 - y1;
-        const float length = sqrtf(dx * dx + dy * dy);
-        if (length == 0.0f) {
-                return;
-        }
-
-        const float nx = (-dy / length) * line_width / 2.0f;
-        const float ny = ( dx / length) * line_width / 2.0f;
-        write_quadrilateral_geometry(
-                geometry,
-                x1 + nx, y1 + ny,
-                x2 + nx, y2 + ny,
-                x2 - nx, y2 - ny,
-                x1 - nx, y1 - ny
-        );
+        write_ellipse_geometry(geometry, x, y, radius, radius, 0.0f);
 }
 
 void write_ellipse_geometry(
         struct Geometry *const geometry,
         const float cx, const float cy,
         const float rx, const float ry,
-        const float rotation,
-        const size_t resolution
+        const float rotation
 ) {
-        if (resolution == 0ULL) {
-                send_message(WARNING, "Writing ellipse geometry with resolution of zero");
+        write_elliptical_arc_geometry(geometry, cx, cy, rx, ry, rotation, 0.0f, 2.0f * (float)M_PI, false);
+}
+
+void write_circular_arc_geometry(
+        struct Geometry *const geometry,
+        const float cx, const float cy,
+        const float radius,
+        const float start_angle,
+        const float end_angle,
+        const bool clockwise
+) {
+        write_elliptical_arc_geometry(geometry, cx, cy, radius, radius, 0.0f, start_angle, end_angle, clockwise);
+}
+
+void write_elliptical_arc_geometry(
+        struct Geometry *const geometry,
+        const float cx, const float cy,
+        const float rx, const float ry,
+        const float rotation,
+        const float start_angle,
+        const float end_angle,
+        const bool clockwise
+) {
+        if (rx <= 0.0f || ry <= 0.0f || start_angle == end_angle) {
                 return;
         }
 
-        if (rx <= 0.0f || ry <= 0.0f) {
-                send_message(WARNING, "Writing ellipse geometry with invalid radii");
-                return;
+        float angle_span = end_angle - start_angle;
+        if (clockwise && angle_span > 0.0f) {
+                angle_span -= 2.0f * (float)M_PI;
+        } else if (!clockwise && angle_span < 0.0f) {
+                angle_span += 2.0f * (float)M_PI;
         }
 
-        secure_geometry_vertex_capacity(geometry, geometry->vertex_count + resolution + 1ULL);
-        secure_geometry_index_capacity(geometry, geometry->index_count + resolution * 3ULL);
+        const float circumference = M_PI * (3.0f * (rx + ry) - sqrtf((3.0f * rx + ry) * (rx + 3.0f * ry)));
+        const float arc_length = circumference * fabsf(angle_span) / (2.0f * (float)M_PI);
+
+        size_t resolution = (size_t)ceilf(arc_length / SEGMENT_LENGTH);
+        if (resolution < 3ULL) {
+                resolution = 3ULL;
+        }
+
+        secure_geometry_vertex_capacity(geometry, geometry->vertex_count + resolution + 2ULL);
+        secure_geometry_index_capacity(geometry, geometry->index_count + (resolution + 1ULL) * 3ULL);
 
         const uint16_t center_index = add_geometry_vertex(geometry, cx, cy);
-
-        for (size_t index = 0ULL; index < resolution; ++index) {
-                const float angle = (float)index / (float)resolution * 2.0f * (float)M_PI;
+        for (size_t index = 0ULL; index <= resolution; ++index) {
+                float interpolation = (float)index / (float)resolution;
+                float angle = start_angle + interpolation * angle_span;
 
                 float x = rx * cosf(angle);
                 float y = ry * sinf(angle);
 
                 if (rotation != 0.0f) {
-                        const float sin = sinf(rotation);
-                        const float cos = cosf(rotation);
-                        const float v = x;
-                        x = v * cos - y * sin;
-                        y = v * sin + y * cos;
+                        const float sin_r = sinf(rotation);
+                        const float cos_r = cosf(rotation);
+                        float vx = x;
+                        x = vx * cos_r - y * sin_r;
+                        y = vx * sin_r + y * cos_r;
                 }
 
                 add_geometry_vertex(geometry, cx + x, cy + y);
@@ -281,30 +334,194 @@ void write_ellipse_geometry(
         for (size_t index = 0ULL; index < resolution; ++index) {
                 geometry->indices[geometry->index_count++] = center_index;
                 geometry->indices[geometry->index_count++] = center_index + 1 + (uint16_t)index;
-                geometry->indices[geometry->index_count++] = center_index + 1 + ((uint16_t)(index + 1ULL) % resolution);
+                geometry->indices[geometry->index_count++] = center_index + 1 + (uint16_t)((index + 1ULL));
         }
 }
 
-void write_circle_geometry(
+void write_circle_outline_geometry(
+        struct Geometry *const geometry,
+        const float cx, const float cy,
+        const float radius,
+        const float line_width
+) {
+        write_ellipse_outline_geometry(geometry, cx, cy, radius, radius, line_width);
+}
+
+void write_ellipse_outline_geometry(
+        struct Geometry *const geometry,
+        const float cx, const float cy,
+        const float rx, const float ry,
+        const float line_width
+) {
+        write_elliptical_arc_outline_geometry(geometry, cx, cy, rx, ry, 0.0f, line_width, 0.0f, 2.0f * (float)M_PI, false, LINE_CAP_NONE);
+}
+
+void write_circular_arc_outline_geometry(
+        struct Geometry *const geometry,
+        const float cx, const float cy,
+        const float radius,
+        const float line_width,
+        const float start_angle,
+        const float end_angle,
+        const bool clockwise,
+        const enum LineCap rounded_caps
+) {
+        write_elliptical_arc_outline_geometry(geometry, cx, cy, radius, radius, 0.0f, line_width, start_angle, end_angle, clockwise, rounded_caps);
+}
+
+void write_elliptical_arc_outline_geometry(
+        struct Geometry *const geometry,
+        const float cx, const float cy,
+        const float rx, const float ry,
+        const float rotation,
+        const float line_width,
+        const float start_angle,
+        const float end_angle,
+        const bool clockwise,
+        const enum LineCap rounded_caps
+) {
+        if (rx <= 0.0f || ry <= 0.0f || start_angle == end_angle) {
+                return;
+        }
+
+        float angle1 = start_angle;
+        float angle2 = end_angle;
+        float angle_span = angle2 - angle1;
+        if (clockwise) {
+                angle1 = end_angle;
+                angle2 = start_angle;
+                angle_span = angle2 - angle1;
+        }
+
+        if (angle_span <= 0.0f) {
+                angle_span += 2.0f * (float)M_PI;
+        }
+
+        const float circumference = M_PI * (3.0f * (rx + ry) - sqrtf((3.0f * rx + ry) * (rx + 3.0f * ry)));
+        const float arc_length = circumference * fabsf(angle_span) / (2.0f * (float)M_PI);
+
+        size_t resolution = (size_t)ceilf(arc_length / SEGMENT_LENGTH);
+        if (resolution < 3ULL) {
+                resolution = 3ULL;
+        }
+
+        secure_geometry_vertex_capacity(geometry, geometry->vertex_count + (resolution + 1ULL) * 2ULL);
+        secure_geometry_index_capacity(geometry, geometry->index_count + resolution * 6ULL);
+
+        float inner_radius_x = rx - line_width / 2.0f;
+        float inner_radius_y = ry - line_width / 2.0f;
+
+        if (inner_radius_x < 0.0f) {
+                inner_radius_x = 0.0f;
+        }
+
+        if (inner_radius_y < 0.0f) {
+                inner_radius_y = 0.0f;
+        }
+
+        const float outer_radius_x = rx + line_width / 2.0f;
+        const float outer_radius_y = ry + line_width / 2.0f;
+
+        const float cos = cosf(rotation);
+        const float sin = sinf(rotation);
+        const uint16_t start_index = (uint16_t)geometry->vertex_count;
+
+        for (size_t index = 0ULL; index <= resolution; ++index) {
+                const float angle = angle1 + angle_span * (float)index / (float)resolution;
+
+                const float x_outer = outer_radius_x * cosf(angle);
+                const float y_outer = outer_radius_y * sinf(angle);
+
+                const float x_inner = inner_radius_x * cosf(angle);
+                const float y_inner = inner_radius_y * sinf(angle);
+
+                const float rx_outer = x_outer * cos - y_outer * sin;
+                const float ry_outer = x_outer * sin + y_outer * cos;
+
+                const float rx_inner = x_inner * cos - y_inner * sin;
+                const float ry_inner = x_inner * sin + y_inner * cos;
+
+                add_geometry_vertex(geometry, cx + rx_outer, cy + ry_outer);
+                add_geometry_vertex(geometry, cx + rx_inner, cy + ry_inner);
+
+                if (index < resolution) {
+                        const uint16_t base = start_index + (uint16_t)index * 2ULL;
+
+                        geometry->indices[geometry->index_count++] = base + 0;
+                        geometry->indices[geometry->index_count++] = base + 1;
+                        geometry->indices[geometry->index_count++] = base + 2;
+
+                        geometry->indices[geometry->index_count++] = base + 1;
+                        geometry->indices[geometry->index_count++] = base + 3;
+                        geometry->indices[geometry->index_count++] = base + 2;
+                }
+        }
+
+        const float cap_radius = line_width / 2.0f;
+
+        if ((rounded_caps & LINE_CAP_START) == LINE_CAP_START || (rounded_caps & LINE_CAP_BOTH) == LINE_CAP_BOTH) {
+                const float x = outer_radius_x * cosf(angle2);
+                const float y = outer_radius_y * sinf(angle2);
+
+                const float rx = x * cos - y * sin;
+                const float ry = x * sin + y * cos;
+
+                const float dx = -ry * sinf(angle2);
+                const float dy =  rx * cosf(angle2);
+                const float tangent_angle = atan2f(dy * cos + dx * sin, dx * cos - dy * sin);
+
+                float nx =  dy;
+                float ny = -dx;
+                const float length1 = sqrtf(nx * nx + ny * ny);
+                nx /= length1;
+                ny /= length1;
+
+                write_circular_arc_geometry(
+                        geometry,
+                        cx + rx - nx * cap_radius,
+                        cy + ry - ny * cap_radius,
+                        cap_radius,
+                        tangent_angle + M_PI / 2.0f,
+                        tangent_angle - M_PI / 2.0f,
+                        false
+                );
+        }
+
+        if ((rounded_caps & LINE_CAP_END) == LINE_CAP_END || (rounded_caps & LINE_CAP_BOTH) == LINE_CAP_BOTH) {
+                const float x = outer_radius_x * cosf(angle1);
+                const float y = outer_radius_y * sinf(angle1);
+
+                const float rx = x * cos - y * sin;
+                const float ry = x * sin + y * cos;
+
+                const float dx = -ry * sinf(angle1);
+                const float dy =  rx * cosf(angle1);
+                const float tangent_angle = atan2f(dy * cos + dx * sin, dx * cos - dy * sin);
+
+                float nx =  dy;
+                float ny = -dx;
+                const float length1 = sqrtf(nx * nx + ny * ny);
+                nx /= length1;
+                ny /= length1;
+
+                write_circular_arc_geometry(
+                        geometry,
+                        cx + rx - nx * cap_radius,
+                        cy + ry - ny * cap_radius,
+                        cap_radius,
+                        tangent_angle + M_PI / 2.0f,
+                        tangent_angle - M_PI / 2.0f,
+                        false
+                );
+        }
+}
+
+void write_hexagon_geometry(
         struct Geometry *const geometry,
         const float x, const float y,
         const float radius,
-        const size_t resolution
+        const float rotation
 ) {
-        if (resolution == 0ULL) {
-                send_message(WARNING, "Writing circle geometry with resolution of zero");
-                return;
-        }
-
-        if (radius <= 0.0f) {
-                send_message(WARNING, "Writing circle geometry with invalid radius");
-                return;
-        }
-
-        write_ellipse_geometry(geometry, x, y, radius, radius, 0.0f, resolution);
-}
-
-void write_hexagon_geometry(struct Geometry *const geometry, const float x, const float y, const float radius, const float rotation) {
         secure_geometry_vertex_capacity(geometry, geometry->vertex_count + 6ULL);
         secure_geometry_index_capacity(geometry, geometry->index_count + 12ULL);
 
@@ -375,22 +592,46 @@ void write_bezier_curve_geometry(
         const float px2,    const float py2, // Endpoint B
         const float cx1,    const float cy1, // Control Point A
         const float cx2,    const float cy2, // Control Point B
-        const float line_width,
-        const size_t resolution
+        const float line_width
 ) {
+
+#define DISTANCE(x1, y1, x2, y2) (sqrtf(((x2) - (x1)) * ((x2) - (x1)) + ((y2) - (y1)) * ((y2) - (y1))))
+
+        const float curvature
+                = DISTANCE(px1, py1, cx1, cy1)
+                + DISTANCE(cx1, cy1, cx2, cy2)
+                + DISTANCE(cx2, cy2, px2, py2)
+                / DISTANCE(px1, py1, px2, py2);
+        size_t samples = (size_t)(curvature * 5.0f);
+        if (samples < 5ULL) {
+                samples = 5ULL;
+        }
+
+        float estimated_length = 0.0f;
+        float x1 = px1, y1 = py1;
+        for (size_t index = 1ULL; index <= samples; ++index) {
+                const float interpolation = (float)index / (float)samples;
+
+                float x2, y2;
+                compute_bezier_point(interpolation, px1, py1, cx1, cy1, cx2, cy2, px2, py2, &x2, &y2);
+                estimated_length += DISTANCE(x1, y1, x2, y2);
+                x1 = x2;
+                y1 = y2;
+        }
+
+#undef DISTANCE
+
+        const size_t resolution = (size_t)ceilf(estimated_length / SEGMENT_LENGTH);
         if (resolution == 0ULL) {
-                send_message(WARNING, "Writing bezier curve strip with resolution of zero");
                 return;
         }
 
         secure_geometry_vertex_capacity(geometry, geometry->vertex_count + (resolution + 1ULL) * 2ULL);
         secure_geometry_index_capacity(geometry, geometry->index_count + resolution * 6ULL);
 
-        float x1, y1;
-        compute_bezier_point(0.0f, px1, py1, px2, py2, cx1, cy1, cx2, cy2, &x1, &y1);
-
         float tx, ty;
         compute_bezier_tangent(0.0f, px1, py1, px2, py2, cx1, cy1, cx2, cy2, &tx, &ty);
+        compute_bezier_point(0.0f, px1, py1, px2, py2, cx1, cy1, cx2, cy2, &x1, &y1);
 
         const float half_width = line_width / 2.0f;
 
@@ -428,243 +669,205 @@ void write_bezier_curve_geometry(
         }
 }
 
-static inline SDL_FPoint normalize(const SDL_FPoint vector) {
-        const float length = sqrtf(vector.x * vector.x + vector.y * vector.y);
-        if (length == 0.0f) {
-                return (SDL_FPoint){0.0f, 0.0f};
-        }
-
-        return (SDL_FPoint){vector.x / length, vector.y / length};
-}
-
 void write_rounded_triangle_geometry(
         struct Geometry *const geometry,
         const float x1, const float y1,
         const float x2, const float y2,
         const float x3, const float y3,
-        const float rounded_radius,
-        const size_t arc_resolution
+        const float rounded_radius
 ) {
-        if (arc_resolution == 0.0f) {
-                if (rounded_radius == 0.0f) {
-                        send_message(WARNING, "Rounded triangle geometry has rounded radius of zero: Writing triangle geometry instead");
-                        write_triangle_geometry(geometry, x1, y1, x2, y2, x3, y3);
-                        return;
-                }
-
-                send_message(WARNING, "Writing rounded triangle geometry with arc resolution of zero");
+        if (rounded_radius <= 0.0f) {
+                write_triangle_geometry(geometry, x1, y1, x2, y2, x3, y3);
                 return;
         }
 
-        SDL_FPoint counterclockwise_vertices[] = {{x1, y1}, {x2, y2}, {x3, y3}};
-        const float signed_area = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
-        if (signed_area < 0.0f) {
-                counterclockwise_vertices[1] = (SDL_FPoint){x3, y3};
-                counterclockwise_vertices[2] = (SDL_FPoint){x2, y2};
-        }
+        const float vx[3] = {x1, x2, x3};
+        const float vy[3] = {y1, y2, y3};
 
-        SDL_FPoint edges[3];
-        for (size_t edge_index = 0ULL; edge_index < 3ULL; ++edge_index) {
-                const size_t next_edge_index = (edge_index + 1ULL) % 3ULL;
-                edges[edge_index] = (SDL_FPoint){
-                        counterclockwise_vertices[next_edge_index].x - counterclockwise_vertices[edge_index].x,
-                        counterclockwise_vertices[next_edge_index].y - counterclockwise_vertices[edge_index].y
-                };
-        }
+        const float double_signed_area = (vx[1] - vx[0]) * (vy[2] - vy[0]) - (vy[1] - vy[0]) * (vx[2] - vx[0]);
+        const bool counterclockwise = double_signed_area > 0.0f;
 
-        SDL_FPoint arc_ends[3][2];
-        SDL_FPoint arc_centers[3];
-        const size_t resolution = arc_resolution <= 64ULL ? arc_resolution : 64ULL;
-        for (size_t corner_index = 0ULL; corner_index < 3ULL; ++corner_index) {
-                const size_t previous_corner_index = (corner_index + 2ULL) % 3ULL;
-                const SDL_FPoint previous_vertex = normalize((SDL_FPoint){-edges[previous_corner_index].x, -edges[previous_corner_index].y});
-                const SDL_FPoint current_vertex = normalize(edges[corner_index]);
+        // index0 - Current Vertex
+        // index1 - Next Vertex
+        // index2 - Previous Vertex
 
-                const float dot = CLAMP_VALUE(previous_vertex.x * current_vertex.x + previous_vertex.y * current_vertex.y, -1.0f, 1.0f);
-                const SDL_FPoint bisector = normalize((SDL_FPoint){previous_vertex.x + current_vertex.x, previous_vertex.y + current_vertex.y});
-                const float offset = rounded_radius / sinf(acosf(dot) / 2.0f);
-                arc_centers[corner_index] = (SDL_FPoint){
-                        .x = counterclockwise_vertices[corner_index].x + bisector.x * offset,
-                        .y = counterclockwise_vertices[corner_index].y + bisector.y * offset
-                };
+        float maximum_radius = FLT_MAX;
+        for (uint8_t index0 = 0; index0 < 3; ++index0) {
+                const uint8_t index1 = (index0 + 1) % 3;
+                const uint8_t index2 = (index0 + 2) % 3;
 
-                const float arc_span = (float)M_PI - acosf(dot);
-                const float start_angle = atan2f(previous_vertex.y, previous_vertex.x) + (float)M_PI_2;
-                const float end_angle = start_angle;
+                float edge1_x = vx[index1] - vx[index0];
+                float edge1_y = vy[index1] - vy[index0];
+                float edge2_x = vx[index2] - vx[index0];
+                float edge2_y = vy[index2] - vy[index0];
 
-                SDL_FPoint arc_points[resolution + 1ULL];
-                for (size_t point_index = 0ULL; point_index <= arc_resolution; ++point_index) {
-                        const float theta = start_angle + arc_span * (float)point_index / (float)arc_resolution;
-                        arc_points[point_index].x = arc_centers[corner_index].x + rounded_radius * cosf(theta);
-                        arc_points[point_index].y = arc_centers[corner_index].y + rounded_radius * sinf(theta);
+                const float length1 = sqrtf(edge1_x * edge1_x + edge1_y * edge1_y);
+                const float length2 = sqrtf(edge2_x * edge2_x + edge2_y * edge2_y);
+                if (length1 == 0.0f || length2 == 0.0f) {
+                        continue;
                 }
 
-                for (size_t point_index = 0ULL; point_index < arc_resolution; ++point_index) {
-                        write_triangle_geometry(
-                                geometry,
-                                arc_centers [corner_index      ].x, arc_centers [corner_index      ].y,
-                                arc_points  [point_index       ].x, arc_points  [point_index       ].y,
-                                arc_points  [point_index + 1ULL].x, arc_points  [point_index + 1ULL].y
-                        );
-                }
+                edge1_x /= length1;
+                edge1_y /= length1;
+                edge2_x /= length2;
+                edge2_y /= length2;
 
-                arc_ends[corner_index][0] = arc_points[0];
-                arc_ends[corner_index][1] = arc_points[resolution];
+                const float dot12 = fmaxf(-1.0f, fminf(1.0f, edge1_x * edge2_x + edge1_y * edge2_y));
+                const float maximum_side_radius = fminf(length1, length2) * tanf(acosf(dot12) / 2.0f);
+                if (maximum_side_radius < maximum_radius) {
+                        maximum_radius = maximum_side_radius;
+                }
         }
 
-        for (size_t edge_index = 0ULL; edge_index < 3ULL; ++edge_index) {
-                const SDL_FPoint a = arc_centers[edge_index];
-                const SDL_FPoint b = arc_centers[(edge_index + 1ULL) % 3ULL];
-                write_line_geometry(geometry, a.x, a.y, b.x, b.y, rounded_radius * 2.0f);
+        const float clamped_rounded_radius = fminf(rounded_radius, maximum_radius);
+
+        float center_x  [3], center_y  [3];
+        float tangent1_x[3], tangent1_y[3];
+        float tangent2_x[3], tangent2_y[3];
+
+        // index0 - Current Vertex
+        // index1 - Next Vertex
+        // index2 - Previous Vertex
+
+        for (uint8_t index0 = 0; index0 < 3; ++index0) {
+                const uint8_t index1 = (index0 + 1) % 3;
+                const uint8_t index2 = (index0 + 2) % 3;
+
+                float edge1_x = vx[index1] - vx[index0];
+                float edge1_y = vy[index1] - vy[index0];
+                float edge2_x = vx[index2] - vx[index0];
+                float edge2_y = vy[index2] - vy[index0];
+
+                const float length1 = sqrtf(edge1_x * edge1_x + edge1_y * edge1_y);
+                const float length2 = sqrtf(edge2_x * edge2_x + edge2_y * edge2_y);
+                if (length1 == 0.0f || length2 == 0.0f) {
+                        continue;
+                }
+
+                edge1_x /= length1;
+                edge1_y /= length1;
+                edge2_x /= length2;
+                edge2_y /= length2;
+
+                const float theta = acosf(fmaxf(-1.0f, fminf(1.0f, edge1_x * edge2_x + edge1_y * edge2_y)));
+                const float tangent = tanf(theta / 2.0f);
+                if (tangent == 0.0f) {
+                        continue;
+                }
+
+                float distance = clamped_rounded_radius / tangent;
+                if (distance > length1) {
+                        distance = length1;
+                }
+
+                if (distance > length2) {
+                        distance = length2;
+                }
+
+                tangent1_x[index0] = vx[index0] + edge1_x * distance;
+                tangent1_y[index0] = vy[index0] + edge1_y * distance;
+                tangent2_x[index0] = vx[index0] + edge2_x * distance;
+                tangent2_y[index0] = vy[index0] + edge2_y * distance;
+
+                float bisector_x = edge1_x + edge2_x, bisector_y = edge1_y + edge2_y;
+                const float bisector_length = sqrtf(bisector_x * bisector_x + bisector_y * bisector_y);
+                if (bisector_length == 0.0f) {
+                        continue;
+                }
+
+                bisector_x /= bisector_length;
+                bisector_y /= bisector_length;
+
+                float sine = sinf(theta / 2.0f);
+                if (sine == 0.0f) {
+                        continue;
+                }
+
+                center_x[index0] = vx[index0] + bisector_x * clamped_rounded_radius / sine;
+                center_y[index0] = vy[index0] + bisector_y * clamped_rounded_radius / sine;
+
+                const float angle1 = atan2f(tangent1_y[index0] - center_y[index0], tangent1_x[index0] - center_x[index0]);
+                const float angle2 = atan2f(tangent2_y[index0] - center_y[index0], tangent2_x[index0] - center_x[index0]);
+                float delta = angle2 - angle1;
+
+                while (delta <= -M_PI) {
+                        delta += 2.0f * (float)M_PI;
+                }
+
+                while (delta > M_PI) {
+                        delta -= 2.0f * (float)M_PI;
+                }
+
+                write_circular_arc_geometry(
+                        geometry,
+                        center_x[index0],
+                        center_y[index0],
+                        clamped_rounded_radius,
+                        angle1, angle2,
+                        delta < 0.0f
+                );
+        }
+
+        // index0 - Current Vertex
+        // index1 - Next Vertex
+        // index2 - Previous Vertex
+
+        for (uint8_t index0 = 0; index0 < 3; ++index0) {
+                const uint8_t index1 = (index0 + 1) % 3;
+
+                float x1 = tangent1_x[index0];
+                float y1 = tangent1_y[index0];
+                float x2 = tangent2_x[index1];
+                float y2 = tangent2_y[index1];
+
+                float distance_x = x2 - x1;
+                float distance_y = y2 - y1;
+                const float length = sqrtf(distance_x * distance_x + distance_y * distance_y);
+                if (length == 0.0f) {
+                        continue;
+                }
+
+                distance_x /= length;
+                distance_y /= length;
+
+                float normal_x = -distance_y;
+                float normal_y = distance_x;
+                if (!counterclockwise) {
+                        normal_x = -normal_x;
+                        normal_y = -normal_y;
+                }
+
+                x1 += normal_x * clamped_rounded_radius / 2.0f;
+                y1 += normal_y * clamped_rounded_radius / 2.0f;
+                x2 += normal_x * clamped_rounded_radius / 2.0f;
+                y2 += normal_y * clamped_rounded_radius / 2.0f;
+
+                write_line_geometry(
+                        geometry,
+                        x1, y1,
+                        x2, y2,
+                        clamped_rounded_radius,
+                        LINE_CAP_NONE
+                );
         }
 
         write_triangle_geometry(
                 geometry,
-                arc_centers[0].x, arc_centers[0].y,
-                arc_centers[1].x, arc_centers[1].y,
-                arc_centers[2].x, arc_centers[2].y
+                center_x[0], center_y[0],
+                center_x[1], center_y[1],
+                center_x[2], center_y[2]
         );
 }
-
-void write_arc_outline_geometry(
-        struct Geometry *const geometry,
-        const float cx, const float cy,
-        const float radius,
-        const float line_width,
-        const float start_angle,
-        const float end_angle,
-        const bool clockwise,
-        const size_t resolution
-) {
-        if (resolution == 0ULL) {
-                send_message(WARNING, "Writing arc outline geometry with resolution of zero");
-                return;
-        }
-
-        write_elliptical_arc_outline_geometry(
-                geometry,
-                cx, cy,
-                radius, radius,
-                line_width,
-                start_angle,
-                end_angle,
-                clockwise,
-                0.0f,
-                resolution
-        );
-}
-
-void write_elliptical_arc_outline_geometry(
-        struct Geometry *const geometry,
-        const float cx, const float cy,
-        const float rx, const float ry,
-        const float line_width,
-        const float start_angle,
-        const float end_angle,
-        const bool clockwise,
-        const float rotation,
-        const size_t resolution
-) {
-        if (resolution == 0ULL) {
-                send_message(WARNING, "Writing elliptical arc outline geometry resolution of zero");
-                return;
-        }
-
-        float angle_1 = start_angle;
-        float angle_2 = end_angle;
-        float angle_span = angle_2 - angle_1;
-        if (clockwise) {
-                angle_1 = end_angle;
-                angle_2 = start_angle;
-                angle_span = angle_2 - angle_1;
-        }
-
-        if (angle_span <= 0.0f) {
-                angle_span += 2.0f * (float)M_PI;
-        }
-
-        SDL_FPoint inner_radii = {
-                rx - line_width / 2.0f,
-                ry - line_width / 2.0f
-        };
-
-        SDL_FPoint outer_radii = {
-                rx + line_width / 2.0f,
-                ry + line_width / 2.0f
-        };
-
-        if (inner_radii.x < 0.0f) {
-                inner_radii.x = 0.0f;
-        }
-
-        if (inner_radii.y < 0.0f) {
-                inner_radii.y = 0.0f;
-        }
-
-        secure_geometry_vertex_capacity(geometry, geometry->vertex_count + (resolution + 1ULL) * 2ULL);
-        secure_geometry_index_capacity(geometry, geometry->index_count + resolution * 6ULL);
-
-        const uint16_t start_index = (uint16_t)geometry->vertex_count;
-
-        const float cos = cosf(rotation);
-        const float sin = sinf(rotation);
-
-        for (size_t index = 0ULL; index <= resolution; ++index) {
-                const float angle = angle_1 + angle_span * (float)index / (float)resolution;
-
-                const float x_outer = outer_radii.x * cosf(angle);
-                const float y_outer = outer_radii.y * sinf(angle);
-
-                const float x_inner = inner_radii.x * cosf(angle);
-                const float y_inner = inner_radii.y * sinf(angle);
-
-                const float rx_outer = x_outer * cos - y_outer * sin;
-                const float ry_outer = x_outer * sin + y_outer * cos;
-
-                const float rx_inner = x_inner * cos - y_inner * sin;
-                const float ry_inner = x_inner * sin + y_inner * cos;
-
-                add_geometry_vertex(geometry, cx + rx_outer, cy + ry_outer);
-                add_geometry_vertex(geometry, cx + rx_inner, cy + ry_inner);
-
-                if (index < resolution) {
-                        const uint16_t base = start_index + (uint16_t)index * 2;
-
-                        geometry->indices[geometry->index_count++] = base;
-                        geometry->indices[geometry->index_count++] = base + 1;
-                        geometry->indices[geometry->index_count++] = base + 2;
-                        geometry->indices[geometry->index_count++] = base + 1;
-                        geometry->indices[geometry->index_count++] = base + 3;
-                        geometry->indices[geometry->index_count++] = base + 2;
-                }
-        }
-}
-
-static inline void write_arc_geometry(
-        struct Geometry *const geometry,
-        const float cx, const float cy,
-        const float start_angle,
-        const float end_angle,
-        const size_t arc_points,
-        const float radius
-) {
-        // TODO: Use 'write_elliptical_arc' or 'write_arc' instead of this
-        for (size_t index = 0ULL; index < arc_points; ++index) {
-                const float interpolation = (float)index / (float)(arc_points - 1ULL);
-                const float angle = start_angle + (end_angle - start_angle) * interpolation;
-                add_geometry_vertex(geometry, cx + radius * cosf(angle), cy + radius * sinf(angle));
-        }
-};
 
 void write_rounded_rectangle_geometry(
         struct Geometry *const geometry,
         const float x, const float y,
         const float w, const float h,
         const float rounded_radius,
-        const size_t corner_resolution
+        const float rotation
 ) {
-        if (rounded_radius <= 0.0f || corner_resolution == 0ULL) {
-                // TODO: Fallback to writing rectangle geometry
+        if (rounded_radius <= 0.0f) {
+                write_rectangle_geometry(geometry, x, y, w, h, rotation);
                 return;
         }
 
@@ -680,24 +883,30 @@ void write_rounded_rectangle_geometry(
                 radius = half_h;
         }
 
-        const size_t arc_points = corner_resolution + 1ULL;
-        const size_t outline_count = arc_points * 4ULL;
+        float x1 = x + half_w - radius, y1 = y - half_h + radius; // Top Right
+        float x2 = x + half_w - radius, y2 = y + half_h - radius; // Bottom Right
+        float x3 = x - half_w + radius, y3 = y + half_h - radius; // Bottom Left
+        float x4 = x - half_w + radius, y4 = y - half_h + radius; // Top Left
 
-        secure_geometry_vertex_capacity(geometry, geometry->vertex_count + outline_count + 1ULL);
-        secure_geometry_index_capacity(geometry, geometry->index_count + outline_count * 3ULL);
+        float x5 = x1 + radius / 2.0f, y5 = y1;
+        float x6 = x2 + radius / 2.0f, y6 = y2;
+        float x7 = x3 - radius / 2.0f, y7 = y3;
+        float x8 = x4 - radius / 2.0f, y8 = y4;
 
-        const uint16_t start_index = (uint16_t)geometry->vertex_count;
-        write_arc_geometry(geometry, x + half_w - radius, y - half_h + radius, -M_PI_2, 0.0f,            arc_points, radius); // Center Top Right
-        write_arc_geometry(geometry, x + half_w - radius, y + half_h - radius, 0.0f, M_PI_2,             arc_points, radius); // Center Bottom Right
-        write_arc_geometry(geometry, x - half_w + radius, y + half_h - radius, M_PI_2, M_PI,             arc_points, radius); // Center Bottom Left
-        write_arc_geometry(geometry, x - half_w + radius, y - half_h + radius, M_PI, 1.5f * (float)M_PI, arc_points, radius); // Center Top Left
+        rotate_point(&x1, &y1, x, y, rotation);
+        rotate_point(&x2, &y2, x, y, rotation);
+        rotate_point(&x3, &y3, x, y, rotation);
+        rotate_point(&x4, &y4, x, y, rotation);
+        rotate_point(&x5, &y5, x, y, rotation);
+        rotate_point(&x6, &y6, x, y, rotation);
+        rotate_point(&x7, &y7, x, y, rotation);
+        rotate_point(&x8, &y8, x, y, rotation);
 
-        const uint16_t center_index = add_geometry_vertex(geometry, x, y);
-        for (size_t index = 0ULL; index < (size_t)outline_count; ++index) {
-                const uint16_t next_index = (uint16_t)(index + 1ULL) % (uint16_t)outline_count;
-
-                geometry->indices[geometry->index_count++] = center_index;
-                geometry->indices[geometry->index_count++] = start_index + index;
-                geometry->indices[geometry->index_count++] = start_index + next_index;
-        }
+        write_circular_arc_geometry(geometry, x1, y1, radius, rotation - M_PI_2, rotation,                      false);
+        write_circular_arc_geometry(geometry, x2, y2, radius, rotation,          rotation + M_PI_2,             false);
+        write_circular_arc_geometry(geometry, x3, y3, radius, rotation + M_PI_2, rotation + M_PI,               false);
+        write_circular_arc_geometry(geometry, x4, y4, radius, rotation + M_PI,   rotation + 1.5f * (float)M_PI, false);
+        write_rectangle_geometry(geometry, x, y, w - radius * 2.0f, h, rotation);
+        write_line_geometry(geometry, x5, y5, x6, y6, radius, LINE_CAP_NONE);
+        write_line_geometry(geometry, x7, y7, x8, y8, radius, LINE_CAP_NONE);
 }

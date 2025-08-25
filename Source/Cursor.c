@@ -74,6 +74,7 @@ bool initialize_cursor(void) {
 
         tooltip_geometry = create_geometry();
         initialize_text(&tooltip_text, "[tooltip]", FONT_CAPTION);
+        set_text_color(&tooltip_text, COLOR_WHITE, 0);
 
         initialize_animation(&tooltip_fade, 2ULL);
 
@@ -203,7 +204,8 @@ void update_cursor(const double delta_time) {
                 tooltip_geometry,
                 tooltip_center_x, tooltip_center_y,
                 width, height,
-                padding / 4.0f, 8ULL
+                padding / 4.0f,
+                0.0f
         );
 
         render_geometry(tooltip_geometry);

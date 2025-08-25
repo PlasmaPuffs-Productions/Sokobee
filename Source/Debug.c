@@ -221,7 +221,7 @@ void initialize_debug_panel(void) {
         }
 
         debug_panel_geometry = create_geometry();
-        set_geometry_color(debug_panel_geometry, COLOR_BLACK, 128);
+        set_geometry_color(debug_panel_geometry, COLOR_BLACK, COLOR_OPAQUE / 2);
         resize_debug_panel();
 }
 
@@ -281,7 +281,8 @@ static void resize_debug_panel(void) {
                 debug_panel_geometry,
                 debug_panel_x, debug_panel_y,
                 debug_panel_width, debug_panel_height,
-                debug_text_height / 5.0f, 8ULL
+                debug_text_height / 5.0f,
+                0.0f
         );
 
         for (uint8_t debug_text_index = 0; debug_text_index < debug_text_count; ++debug_text_index) {

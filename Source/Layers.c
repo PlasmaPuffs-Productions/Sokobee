@@ -39,7 +39,7 @@ void initialize_layers(void) {
         grid_metrics.rows = LAYER_GRID_ROWS;
         grid_rotation = RANDOM_NUMBER(0.0f, ROTATION_CYCLE);
 
-        set_geometry_color(transition_geometry, COLOR_YELLOW, 255);
+        set_geometry_color(transition_geometry, COLOR_YELLOW, COLOR_OPAQUE);
         resize_layers();
 }
 
@@ -93,13 +93,13 @@ void update_layers(const double delta_time) {
         clear_geometry(background_geometry);
         clear_geometry(transition_geometry);
 
-        set_geometry_color(background_geometry, COLOR_DARK_BROWN, 255);
+        set_geometry_color(background_geometry, COLOR_DARK_BROWN, COLOR_OPAQUE);
         write_rectangle_geometry(background_geometry, layers_width / 2.0f, layers_height / 2.0f, layers_width, layers_height, 0.0f);
 
         const float rotation_pivot_x = grid_metrics.grid_x + grid_metrics.grid_width  / 2.0f;
         const float rotation_pivot_y = grid_metrics.grid_y + grid_metrics.grid_height / 2.0f;
 
-        set_geometry_color(background_geometry, COLOR_BROWN, 255);
+        set_geometry_color(background_geometry, COLOR_BROWN, COLOR_OPAQUE);
         const float time = transition_easing(1.0f - fabsf(2.0f * transition_time - 1.0f)) * 2.0f;
         for (size_t row = 0ULL; row < LAYER_GRID_ROWS; ++row) {
                 const size_t row_number = transition_direction ? row + 1ULL : (LAYER_GRID_ROWS - (row + 1ULL));
