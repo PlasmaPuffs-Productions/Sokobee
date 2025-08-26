@@ -255,11 +255,14 @@ void update_debug_panel(void) {
 
 static void resize_debug_panel(void) {
         const uint8_t debug_text_count = (uint8_t)(sizeof(debug_texts) / sizeof(debug_texts[0]));
-        const float debug_text_height = (float)get_text_height(debug_texts[0]);
-        float debug_text_width = 0.0f;
+
+        size_t debug_text_width = 0.0f, debug_text_height;
+        get_text_dimensions(debug_texts[0], NULL, &debug_text_height);
 
         for (uint8_t debug_text_index = 0; debug_text_index < debug_text_count; ++debug_text_index) {
-                const float width = (float)get_text_width(debug_texts[debug_text_index]);
+                size_t width;
+                get_text_dimensions(debug_texts[debug_text_index], &width, NULL);
+
                 if (width > debug_text_width) {
                         debug_text_width = width;
                 }
@@ -270,8 +273,8 @@ static void resize_debug_panel(void) {
         SDL_GetRendererOutputSize(get_context_renderer(), &drawable_width, &drawable_height);
         const float padding = CLAMP_VALUE(MAXIMUM_VALUE((float)drawable_width, (float)drawable_height) / 100.0f, 10.0f, 20.0f);
 
-        const float debug_panel_width = debug_text_width + padding * 2.0f;
-        const float debug_panel_height = debug_text_height * (float)debug_text_count + padding * 2.0f;
+        const float debug_panel_width = (float)debug_text_width + padding * 2.0f;
+        const float debug_panel_height = (float)debug_text_height * (float)debug_text_count + padding * 2.0f;
 
         const float debug_panel_x =                           padding + debug_panel_width  / 2.0f;
         const float debug_panel_y = (float)drawable_height - (padding + debug_panel_height / 2.0f);
@@ -281,14 +284,14 @@ static void resize_debug_panel(void) {
                 debug_panel_geometry,
                 debug_panel_x, debug_panel_y,
                 debug_panel_width, debug_panel_height,
-                debug_text_height / 5.0f,
+                (float)debug_text_height / 5.0f,
                 0.0f
         );
 
         for (uint8_t debug_text_index = 0; debug_text_index < debug_text_count; ++debug_text_index) {
                 const uint8_t reversed_index = debug_text_count - debug_text_index - 1;
                 debug_texts[debug_text_index]->absolute_offset_x = padding * 2.0f;
-                debug_texts[debug_text_index]->absolute_offset_y = (float)drawable_height - padding * 2.0f - debug_text_height * (float)reversed_index;
+                debug_texts[debug_text_index]->absolute_offset_y = (float)drawable_height - padding * 2.0f - (float)debug_text_height * (float)reversed_index;
         }
 }
 

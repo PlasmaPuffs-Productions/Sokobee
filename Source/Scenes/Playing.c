@@ -215,8 +215,11 @@ static void update_playing_scene(const double delta_time) {
         move_count_label.scale_y = move_count_scale;
         update_animation(&move_count_pulse, delta_time);
 
+        size_t move_count_label_height;
+        get_text_dimensions(&level_number_label, NULL, &move_count_label_height);
+
         move_count_label.absolute_offset_x = padding;
-        move_count_label.absolute_offset_y = 1.5f * padding + (float)get_text_height(&level_number_label);
+        move_count_label.absolute_offset_y = padding * 1.5f + (float)move_count_label_height;
         update_text(&move_count_label);
 
         update_button(&undo_button, delta_time);

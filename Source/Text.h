@@ -37,8 +37,7 @@ void initialize_text(struct Text *const text, const char *const string, const en
 void deinitialize_text(struct Text *const text);
 
 void update_text(struct Text *const text);
-size_t get_text_width(struct Text *const text);
-size_t get_text_height(struct Text *const text);
+void get_text_dimensions(struct Text *const text, size_t *const width, size_t *const height);
 
 void set_text_string(struct Text *const text, const char *const string);
 void set_text_font(struct Text *const text, const enum Font font);

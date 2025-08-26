@@ -175,26 +175,30 @@ void update_cursor(const double delta_time) {
         const float cursor_y = (float)mouse_y * (float)drawable_height / (float)window_height;
 
         const float padding = TOOLTIP_PADDING * drawable_height / window_height;
-        const float width   = get_text_width(&tooltip_text)  + padding * 2.0f;
-        const float height  = get_text_height(&tooltip_text) + padding * 2.0f;
 
-        float tooltip_center_x = cursor_x + TOOLTIP_CURSOR_OFFSET + width * 0.5f;
-        float tooltip_center_y = cursor_y + TOOLTIP_CURSOR_OFFSET + height * 0.5f;
+        size_t width, height;
+        get_text_dimensions(&tooltip_text, &width, &height);
 
-        if (tooltip_center_x + width * 0.5f > drawable_width) {
-                tooltip_center_x = cursor_x - TOOLTIP_CURSOR_OFFSET - width * 0.5f;
+        const float tooltip_width  = (float)width  + padding * 2.0f;
+        const float tooltip_height = (float)height + padding * 2.0f;
+
+        float tooltip_center_x = cursor_x + TOOLTIP_CURSOR_OFFSET + tooltip_width * 0.5f;
+        float tooltip_center_y = cursor_y + TOOLTIP_CURSOR_OFFSET + tooltip_height * 0.5f;
+
+        if (tooltip_center_x + tooltip_width * 0.5f > drawable_width) {
+                tooltip_center_x = cursor_x - TOOLTIP_CURSOR_OFFSET - tooltip_width * 0.5f;
         }
 
-        if (tooltip_center_y + height * 0.5f > drawable_height) {
-                tooltip_center_y = cursor_y - TOOLTIP_CURSOR_OFFSET - height * 0.5f;
+        if (tooltip_center_y + tooltip_height * 0.5f > drawable_height) {
+                tooltip_center_y = cursor_y - TOOLTIP_CURSOR_OFFSET - tooltip_height * 0.5f;
         }
 
-        if (tooltip_center_x - width * 0.5f < 0.0f) {
-                tooltip_center_x = width * 0.5f;
+        if (tooltip_center_x - tooltip_width * 0.5f < 0.0f) {
+                tooltip_center_x = tooltip_width * 0.5f;
         }
 
-        if (tooltip_center_y - height * 0.5f < 0.0f) {
-                tooltip_center_y = height * 0.5f;
+        if (tooltip_center_y - tooltip_height * 0.5f < 0.0f) {
+                tooltip_center_y = tooltip_height * 0.5f;
         }
 
         clear_geometry(tooltip_geometry);
@@ -203,15 +207,15 @@ void update_cursor(const double delta_time) {
         write_rounded_rectangle_geometry(
                 tooltip_geometry,
                 tooltip_center_x, tooltip_center_y,
-                width, height,
+                tooltip_width, tooltip_height,
                 padding / 4.0f,
                 0.0f
         );
 
         render_geometry(tooltip_geometry);
 
-        tooltip_text.absolute_offset_x = tooltip_center_x - width  / 2.0f + padding;
-        tooltip_text.absolute_offset_y = tooltip_center_y - height / 2.0f + padding;
+        tooltip_text.absolute_offset_x = tooltip_center_x - tooltip_width  / 2.0f + padding;
+        tooltip_text.absolute_offset_y = tooltip_center_y - tooltip_height / 2.0f + padding;
         update_text(&tooltip_text);
 }
 

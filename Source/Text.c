@@ -27,7 +27,7 @@ struct TextImplementation {
         uint8_t a;
 };
 
-static bool refresh_text(struct Text *const text);
+static void refresh_text(struct Text *const text);
 
 struct Text *create_text(const char *const string, const enum Font font) {
         struct Text *const text = (struct Text *)xmalloc(sizeof(struct Text));
@@ -64,9 +64,9 @@ void initialize_text(struct Text *const text, const char *const string, const en
         text->implementation->maximum_width = 0.0f;
         text->implementation->line_spacing = 0.0f;
         text->implementation->outdated_texture = true;
+        text->implementation->texture_width  = (size_t)MISSING_TEXTURE_WIDTH;
+        text->implementation->texture_height = (size_t)MISSING_TEXTURE_HEIGHT;
         text->implementation->texture = NULL;
-        text->implementation->texture_width = 0ULL;
-        text->implementation->texture_height = 0ULL;
         text->implementation->r = 255;
         text->implementation->g = 255;
         text->implementation->b = 255;
@@ -96,10 +96,7 @@ void deinitialize_text(struct Text *const text) {
 void update_text(struct Text *const text) {
         if (text->implementation->outdated_texture) {
                 text->implementation->outdated_texture = false;
-                if (!refresh_text(text)) {
-                        send_message(ERROR, "Failed to refresh text!");
-                        // TODO: Handle
-                }
+                refresh_text(text);
         }
 
         if (text->scale_x == 0.0f || text->scale_y == 0.0f) {
@@ -127,30 +124,25 @@ void update_text(struct Text *const text) {
                 renderer_flip &= SDL_FLIP_VERTICAL;
         }
 
-        SDL_SetTextureAlphaMod(text->implementation->texture, (Uint8)text->implementation->a);
-        SDL_RenderCopyEx(get_context_renderer(), text->implementation->texture, NULL, &destination, text->rotation * 180.0f / (float)M_PI, NULL, renderer_flip);
+        SDL_Texture *const texture = text->implementation->texture ? text->implementation->texture : get_mising_texture();
+
+        SDL_SetTextureAlphaMod(texture, (Uint8)text->implementation->a);
+        SDL_RenderCopyEx(get_context_renderer(), texture, NULL, &destination, text->rotation * 180.0f / (float)M_PI, NULL, renderer_flip);
 }
 
-size_t get_text_width(struct Text *const text) {
+void get_text_dimensions(struct Text *const text, size_t *const width, size_t *const height) {
         if (text->implementation->outdated_texture) {
                 text->implementation->outdated_texture = false;
-                if (!refresh_text(text)) {
-                        send_message(ERROR, "Failed to refresh text to get text width: Keeping outdated texture for now");
-                }
+                refresh_text(text);
         }
 
-        return text->implementation->texture_width;
-}
-
-size_t get_text_height(struct Text *const text) {
-        if (text->implementation->outdated_texture) {
-                text->implementation->outdated_texture = false;
-                if (!refresh_text(text)) {
-                        send_message(ERROR, "Failed to refresh text to get text height: Keeping outdated texture for now");
-                }
+        if (width != NULL) {
+                *width = text->implementation->texture_width;
         }
 
-        return text->implementation->texture_height;
+        if (height != NULL) {
+                *height = text->implementation->texture_height;
+        }
 }
 
 void set_text_string(struct Text *const text, const char *const string) {
@@ -197,7 +189,21 @@ void set_text_color(struct Text *const text, const uint8_t r, const uint8_t g, c
 #define MAXIMUM_LINE_SIZE 1024ULL
 #define MAXIMUM_LINE_COUNT 128ULL
 
-static bool refresh_text(struct Text *const text) {
+static void invalidate_text(struct Text *const text) {
+        if (!text->implementation->texture) {
+                return;
+        }
+
+        if (!apply_missing_texture(text->implementation->texture)) {
+                SDL_DestroyTexture(text->implementation->texture);
+                text->implementation->texture = NULL;
+
+                text->implementation->texture_width  = (size_t)MISSING_TEXTURE_WIDTH;
+                text->implementation->texture_height = (size_t)MISSING_TEXTURE_HEIGHT;
+        }
+}
+
+static void refresh_text(struct Text *const text) {
         TTF_Font *const font = get_font(text->implementation->font);
 
         char word_buffer[MAXIMUM_WORD_SIZE];
@@ -226,23 +232,23 @@ static bool refresh_text(struct Text *const text) {
                                 ++position;
                         }
 
-                        // build a string containing that many spaces
                         if (space_count >= sizeof(word_buffer)) {
-                                send_message(ERROR, "Too many consecutive spaces");
-                                return false;
+                                send_message(ERROR, "Failed to refresh space: Too many consecutive spaces");
+                                invalidate_text(text);
+                                return;
                         }
+
                         memset(word_buffer, ' ', space_count);
                         word_buffer[space_count] = '\0';
 
                         int word_width;
                         TTF_SizeUTF8(font, word_buffer, &word_width, NULL);
 
-                        // append directly to line buffer
                         strncat(line_buffer, word_buffer, sizeof(line_buffer) - strlen(line_buffer) - 1ULL);
                         current_width += (size_t)word_width;
 
                         previous_space = true;
-                        continue; // skip to next iteration
+                        continue;
                 }
 
                 const char *word_start = position;
@@ -257,7 +263,8 @@ static bool refresh_text(struct Text *const text) {
                                 xfree(lines[line_index]);
                         }
 
-                        return false;
+                        invalidate_text(text);
+                        return;
                 }
 
                 strncpy(word_buffer, word_start, word_length);
@@ -314,21 +321,28 @@ static bool refresh_text(struct Text *const text) {
 
         if (!line_count) {
                 send_message(ERROR, "Failed to refresh text: Text contains no visible content");
-                return false;
+                invalidate_text(text);
+                return;
         }
 
         const size_t total_height = line_count * line_height + (line_count - 1ULL) * line_gap;
-        SDL_Surface *new_surface = SDL_CreateRGBSurfaceWithFormat(0, total_width, total_height, 32, SDL_PIXELFORMAT_RGBA32);
-        if (!new_surface) {
+        SDL_Surface *const surface = SDL_CreateRGBSurfaceWithFormat(0, total_width, total_height, 32, SDL_PIXELFORMAT_RGBA8888);
+        if (!surface) {
                 send_message(ERROR, "Failed to refresh text: Failed to create surface: %s", SDL_GetError());
                 for (size_t line_index = 0ULL; line_index < line_count; ++line_index) {
                         xfree(lines[line_index]);
                 }
 
-                return false;
+                invalidate_text(text);
+                return;
         }
 
-        SDL_SetSurfaceBlendMode(new_surface, SDL_BLENDMODE_BLEND);
+        if (SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_BLEND) != 0) {
+                send_message(ERROR, "Failed to refresh text: Failed to set surface blend mode: %s", SDL_GetError());
+                invalidate_text(text);
+                return;
+        }
+
         const SDL_Color baked_color = (SDL_Color){
                 .r = text->implementation->r,
                 .g = text->implementation->g,
@@ -344,8 +358,9 @@ static bool refresh_text(struct Text *const text) {
                                 free(lines[line_index]);
                         }
 
-                        SDL_FreeSurface(new_surface);
-                        return false;
+                        SDL_FreeSurface(surface);
+                        invalidate_text(text);
+                        return;
                 }
 
                 size_t left_side;
@@ -373,7 +388,7 @@ static bool refresh_text(struct Text *const text) {
                         .h = line_surface->h
                 };
 
-                SDL_BlitSurface(line_surface, NULL, new_surface, &destination);
+                SDL_BlitSurface(line_surface, NULL, surface, &destination);
                 SDL_FreeSurface(line_surface);
         }
 
@@ -381,17 +396,45 @@ static bool refresh_text(struct Text *const text) {
                 free(lines[line_index]);
         }
 
-        SDL_Texture *const new_texture = SDL_CreateTextureFromSurface(get_context_renderer(), new_surface);
-        SDL_FreeSurface(new_surface);
+        SDL_DestroyTexture(text->implementation->texture);
+        if (!(text->implementation->texture = SDL_CreateTexture(get_context_renderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, surface->w, surface->h))) {
+                send_message(ERROR, "Failed to refresh text: Failed to create texture: %s", SDL_GetError());
+                SDL_FreeSurface(surface);
 
-        if (new_texture == NULL) {
-                send_message(ERROR, "Failed to refresh text: Failed to create texture from surface: %s", SDL_GetError());
-                return false;
+                text->implementation->texture_width = MISSING_TEXTURE_WIDTH;
+                text->implementation->texture_height = MISSING_TEXTURE_HEIGHT;
+                return;
         }
 
-        SDL_DestroyTexture(text->implementation->texture);
-        text->implementation->texture = new_texture;
-        text->implementation->texture_width = total_width;
-        text->implementation->texture_height = total_height;
-        return true;
+        if (SDL_SetTextureBlendMode(text->implementation->texture, SDL_BLENDMODE_BLEND) != 0) {
+                send_message(ERROR, "Failed to refresh text: Failed to set texture blend mode: %s", SDL_GetError());
+                SDL_FreeSurface(surface);
+
+                invalidate_text(text);
+                return;
+        }
+
+        void *pixels;
+        int pitch;
+        if (SDL_LockTexture(text->implementation->texture, NULL, &pixels, &pitch) != 0) {
+                send_message(ERROR, "Failed to refresh text: Failed to lock texture: %s", SDL_GetError());
+                SDL_FreeSurface(surface);
+
+                invalidate_text(text);
+                return;
+        }
+
+        Uint8 *const destination = (Uint8 *)pixels;
+        Uint8 *const source = (Uint8 *)surface->pixels;
+
+        const int copy_pitch = SDL_min(pitch, surface->pitch);
+        for (int row = 0; row < surface->h; ++row) {
+                memcpy(destination + row * pitch, source + row * surface->pitch, copy_pitch);
+        }
+
+        text->implementation->texture_width  = surface->w;
+        text->implementation->texture_height = surface->h;
+
+        SDL_UnlockTexture(text->implementation->texture);
+        SDL_FreeSurface(surface);
 }
