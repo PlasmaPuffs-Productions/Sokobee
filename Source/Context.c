@@ -39,7 +39,7 @@ bool initialize_context(void) {
 
         SDL_SetWindowMinimumSize(window, MINIMUM_WINDOW_WIDTH, MINIMUM_WINDOW_HEIGHT);
 
-        if (!(renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC))) {
+        if (!(renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED))) {
                 send_message(ERROR, "Failed to initialize context: Failed to create renderer: %s", SDL_GetError());
                 terminate_context();
                 return false;

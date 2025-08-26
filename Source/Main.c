@@ -74,6 +74,7 @@ static void initialize(void) {
 }
 
 static void update(const double delta_time) {
+        // I need to start profiling when the frame starts because the true FPS gets capped on some environments (like mine)
         start_debug_frame_profiling();
 
         SDL_Event event;
@@ -101,7 +102,7 @@ static void update(const double delta_time) {
         update_scene_manager(delta_time);
         render_transition_layer();
 
-        update_debug_panel();
+        update_debug_panel(delta_time);
 
         update_cursor(delta_time);
         request_cursor(CURSOR_ARROW);

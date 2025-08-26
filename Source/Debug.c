@@ -106,10 +106,13 @@ bool get_process_memory_usage_bytes(size_t *const out_memory_usage_bytes) {
 
 #endif
 
-#define REFRESH_SECONDS 0.5
+#define REFRESH_MILLISECONDS 500
+static double actual_time_elapsed = 0.0;
+static double actual_time_accumulator = 0.0;
+
 static Uint64 frame_start = 0;
-static double time_elapsed = 0.0;
 static double time_accumulator = 0.0;
+static double previous_frame_duration = 0.0;
 static size_t frame_accumulator = 0ULL;
 static size_t displayed_viewport_width = 0ULL;
 static size_t displayed_viewport_height = 0ULL;
@@ -149,66 +152,10 @@ void start_debug_frame_profiling(void) {
 
 void finish_debug_frame_profiling(void) {
         const Uint64 frame_finish = SDL_GetPerformanceCounter();
-        const double frame_duration = (double)(frame_finish - frame_start) / (double)SDL_GetPerformanceFrequency();
+        previous_frame_duration = (double)(frame_finish - frame_start) / (double)SDL_GetPerformanceFrequency();
 
         ++frame_accumulator;
-        time_accumulator += frame_duration;
-
-        if (time_accumulator >= REFRESH_SECONDS) {
-                char debug_text_buffer[DEBUG_TEXT_BUFFER_SIZE];
-                const unsigned long debug_text_buffer_size = sizeof(debug_text_buffer);
-
-                snprintf(debug_text_buffer, debug_text_buffer_size, "FPS:      %.3lf", (double)frame_accumulator / time_accumulator);
-                set_text_string(&debug_FPS_text, debug_text_buffer);
-
-                snprintf(debug_text_buffer, debug_text_buffer_size, "Current:  %.3lfms", frame_duration * 1000.0);
-                set_text_string(&debug_current_frame_time_text, debug_text_buffer);
-
-                snprintf(debug_text_buffer, debug_text_buffer_size, "Average:  %.3lfms", time_accumulator * 1000.0 / (double)frame_accumulator);
-                set_text_string(&debug_average_frame_time_text, debug_text_buffer);
-
-                size_t memory_usage_bytes;
-                if (get_process_memory_usage_bytes(&memory_usage_bytes)) {
-                        snprintf(debug_text_buffer, debug_text_buffer_size, "Memory:   %.1lfMB", (double)memory_usage_bytes / (1024.0 * 1024.0));
-                        set_text_string(&debug_memory_usage_text, debug_text_buffer);
-                } else {
-                        set_text_string(&debug_memory_usage_text, "Memory:   Unknown");
-                }
-
-                size_t vertex_count;
-                size_t index_count;
-                get_tracked_geometry_data(&vertex_count, &index_count);
-
-                snprintf(debug_text_buffer, debug_text_buffer_size, "Vertices: %zu", vertex_count);
-                set_text_string(&debug_vertex_count_text, debug_text_buffer);
-
-                snprintf(debug_text_buffer, debug_text_buffer_size, "Indices:  %zu", index_count);
-                set_text_string(&debug_index_count_text, debug_text_buffer);
-
-                int window_width;
-                int window_height;
-                SDL_GetWindowSizeInPixels(get_context_window(), &window_width, &window_height);
-
-                if (displayed_viewport_width != (size_t)window_width || displayed_viewport_height != (size_t)window_height) {
-                        displayed_viewport_width  = (size_t)window_width;
-                        snprintf(debug_text_buffer, debug_text_buffer_size, "Width:    %zupx", displayed_viewport_width);
-                        set_text_string(&debug_viewport_width_text, debug_text_buffer);
-                }
-
-                if (displayed_viewport_height != (size_t)window_height) {
-                        displayed_viewport_height = (size_t)window_height;
-                        snprintf(debug_text_buffer, debug_text_buffer_size, "Height:   %zupx", displayed_viewport_height);
-                        set_text_string(&debug_viewport_height_text, debug_text_buffer);
-                }
-
-                snprintf(debug_text_buffer, debug_text_buffer_size, "Time:     %.3lfsec", time_elapsed + time_accumulator);
-                set_text_string(&debug_time_elapsed_text, debug_text_buffer);
-
-                time_elapsed += time_accumulator;
-                time_accumulator = 0.0f;
-                frame_accumulator = 0ULL;
-                resize_debug_panel();
-        }
+        time_accumulator += previous_frame_duration;
 }
 
 void initialize_debug_panel(void) {
@@ -244,7 +191,19 @@ void debug_panel_receive_event(const SDL_Event *const event) {
         }
 }
 
-void update_debug_panel(void) {
+static void refresh_debug_panel(void);
+
+void update_debug_panel(const double delta_time) {
+        actual_time_elapsed += delta_time;
+        actual_time_accumulator += delta_time;
+        if (actual_time_accumulator >= REFRESH_MILLISECONDS) {
+                while (actual_time_accumulator >= REFRESH_MILLISECONDS) {
+                        actual_time_accumulator -= REFRESH_MILLISECONDS;
+                }
+
+                refresh_debug_panel();
+        }
+
         render_geometry(debug_panel_geometry);
 
         const uint8_t debug_text_count = (uint8_t)(sizeof(debug_texts) / sizeof(debug_texts[0]));
@@ -293,6 +252,61 @@ static void resize_debug_panel(void) {
                 debug_texts[debug_text_index]->absolute_offset_x = padding * 2.0f;
                 debug_texts[debug_text_index]->absolute_offset_y = (float)drawable_height - padding * 2.0f - (float)debug_text_height * (float)reversed_index;
         }
+}
+
+static void refresh_debug_panel(void) {
+        char debug_text_buffer[DEBUG_TEXT_BUFFER_SIZE];
+        const unsigned long debug_text_buffer_size = sizeof(debug_text_buffer);
+
+        snprintf(debug_text_buffer, debug_text_buffer_size, "FPS:      %.3lf", (double)frame_accumulator / time_accumulator);
+        set_text_string(&debug_FPS_text, debug_text_buffer);
+
+        snprintf(debug_text_buffer, debug_text_buffer_size, "Current:  %.3lfms", previous_frame_duration * 1000.0);
+        set_text_string(&debug_current_frame_time_text, debug_text_buffer);
+
+        snprintf(debug_text_buffer, debug_text_buffer_size, "Average:  %.3lfms", time_accumulator * 1000.0 / (double)frame_accumulator);
+        set_text_string(&debug_average_frame_time_text, debug_text_buffer);
+
+        size_t memory_usage_bytes;
+        if (get_process_memory_usage_bytes(&memory_usage_bytes)) {
+                snprintf(debug_text_buffer, debug_text_buffer_size, "Memory:   %.1lfMB", (double)memory_usage_bytes / (1024.0 * 1024.0));
+                set_text_string(&debug_memory_usage_text, debug_text_buffer);
+        } else {
+                set_text_string(&debug_memory_usage_text, "Memory:   Unknown");
+        }
+
+        size_t vertex_count;
+        size_t index_count;
+        get_tracked_geometry_data(&vertex_count, &index_count);
+
+        snprintf(debug_text_buffer, debug_text_buffer_size, "Vertices: %zu", vertex_count);
+        set_text_string(&debug_vertex_count_text, debug_text_buffer);
+
+        snprintf(debug_text_buffer, debug_text_buffer_size, "Indices:  %zu", index_count);
+        set_text_string(&debug_index_count_text, debug_text_buffer);
+
+        int window_width;
+        int window_height;
+        SDL_GetWindowSizeInPixels(get_context_window(), &window_width, &window_height);
+
+        if (displayed_viewport_width != (size_t)window_width || displayed_viewport_height != (size_t)window_height) {
+                displayed_viewport_width  = (size_t)window_width;
+                snprintf(debug_text_buffer, debug_text_buffer_size, "Width:    %zupx", displayed_viewport_width);
+                set_text_string(&debug_viewport_width_text, debug_text_buffer);
+        }
+
+        if (displayed_viewport_height != (size_t)window_height) {
+                displayed_viewport_height = (size_t)window_height;
+                snprintf(debug_text_buffer, debug_text_buffer_size, "Height:   %zupx", displayed_viewport_height);
+                set_text_string(&debug_viewport_height_text, debug_text_buffer);
+        }
+
+        snprintf(debug_text_buffer, debug_text_buffer_size, "Time:     %.3lfsec", actual_time_elapsed / 1000.0);
+        set_text_string(&debug_time_elapsed_text, debug_text_buffer);
+
+        time_accumulator = 0.0f;
+        frame_accumulator = 0ULL;
+        resize_debug_panel();
 }
 
 #endif
