@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <string.h>
 
 #include <SDL.h>
 
@@ -57,7 +56,7 @@ bool initialize_level(struct Level *const level, const struct LevelMetadata *con
         level->move_count = 0ULL;
         level->completion_callback = NULL;
         level->completion_callback_data = NULL;
-        level->title = strdup(metadata->title);
+        level->title = xstrdup(metadata->title);
 
         level->implementation = (struct LevelImplementation *)xmalloc(sizeof(struct LevelImplementation));
         level->implementation->grid_geometry = create_geometry();
@@ -101,7 +100,7 @@ void deinitialize_level(struct Level *const level) {
                 return;
         }
 
-        free(level->title);
+        xfree(level->title);
         level->title = NULL;
 
         struct LevelImplementation *const implementation = level->implementation;

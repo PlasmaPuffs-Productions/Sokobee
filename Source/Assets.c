@@ -189,8 +189,8 @@ static bool load_levels(const cJSON *const json) {
                 }
 
                 struct LevelMetadata *const level_metadata = &level_metadatas[level_metadata_index++];
-                level_metadata->title = strdup(title->valuestring);
-                level_metadata->path = strdup(path->valuestring);
+                level_metadata->title = xstrdup(title->valuestring);
+                level_metadata->path  = xstrdup(path->valuestring);
         }
 
         return true;
@@ -202,8 +202,8 @@ static void unload_levels(void) {
         }
 
         for (size_t level_metadata_index = 0ULL; level_metadata_index < level_metadata_count; ++level_metadata_index) {
-                free(level_metadatas[level_metadata_index].title);
-                free(level_metadatas[level_metadata_index].path);
+                xfree(level_metadatas[level_metadata_index].title);
+                xfree(level_metadatas[level_metadata_index].path);
         }
 
         xfree(level_metadatas);

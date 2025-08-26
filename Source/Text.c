@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <string.h>
 
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -58,7 +57,7 @@ void initialize_text(struct Text *const text, const char *const string, const en
         text->visible = true;
 
         text->implementation = (struct TextImplementation *)xmalloc(sizeof(struct TextImplementation));
-        text->implementation->string = strdup(string);
+        text->implementation->string = xstrdup(string);
         text->implementation->font = font;
         text->implementation->alignment = TEXT_ALIGNMENT_LEFT;
         text->implementation->maximum_width = 0.0f;
@@ -81,7 +80,7 @@ void deinitialize_text(struct Text *const text) {
 
         if (text->implementation) {
                 if (text->implementation->string) {
-                        free(text->implementation->string);
+                        xfree(text->implementation->string);
                 }
 
                 if (text->implementation->texture) {
@@ -146,8 +145,8 @@ void get_text_dimensions(struct Text *const text, size_t *const width, size_t *c
 }
 
 void set_text_string(struct Text *const text, const char *const string) {
-        free(text->implementation->string);
-        text->implementation->string = strdup(string);
+        xfree(text->implementation->string);
+        text->implementation->string = xstrdup(string);
         text->implementation->outdated_texture = true;
 }
 
@@ -276,7 +275,7 @@ static void refresh_text(struct Text *const text) {
                 const size_t spacing = (line_buffer[0] != '\0') ? (size_t)space_width : 0ULL;
                 const size_t projected_width = current_width + spacing + (size_t)word_width;
                 if (projected_width > maximum_line_width && line_buffer[0] != '\0') {
-                        lines[line_count++] = strdup(line_buffer);
+                        lines[line_count++] = xstrdup(line_buffer);
                         if (current_width > total_width) {
                                 total_width = current_width;
                         }
@@ -296,7 +295,7 @@ static void refresh_text(struct Text *const text) {
                 current_width += (size_t)word_width;
 
                 if (*position == '\n' || projected_width > maximum_line_width) {
-                        lines[line_count++] = strdup(line_buffer[0] ? line_buffer : " ");
+                        lines[line_count++] = xstrdup(line_buffer[0] ? line_buffer : " ");
                         if (current_width > total_width) {
                                 total_width = current_width;
                         }
@@ -313,7 +312,7 @@ static void refresh_text(struct Text *const text) {
         if (line_buffer[0] != '\0' && line_count < MAXIMUM_LINE_COUNT) {
                 int line_width;
                 TTF_SizeUTF8(font, line_buffer, &line_width, NULL);
-                lines[line_count++] = strdup(line_buffer);
+                lines[line_count++] = xstrdup(line_buffer);
                 if ((size_t)line_width > total_width) {
                         total_width = (size_t)line_width;
                 }
@@ -355,7 +354,7 @@ static void refresh_text(struct Text *const text) {
                 if (!line_surface) {
                         send_message(ERROR, "Failed to refresh text: Failed to render line %zu: %s", line_index, TTF_GetError());
                         for (size_t line_index = 0ULL; line_index < line_count; ++line_index) {
-                                free(lines[line_index]);
+                                xfree(lines[line_index]);
                         }
 
                         SDL_FreeSurface(surface);
@@ -393,7 +392,7 @@ static void refresh_text(struct Text *const text) {
         }
 
         for (size_t line_index = 0ULL; line_index < line_count; ++line_index) {
-                free(lines[line_index]);
+                xfree(lines[line_index]);
         }
 
         SDL_DestroyTexture(text->implementation->texture);

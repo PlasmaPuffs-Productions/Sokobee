@@ -32,8 +32,6 @@ void update_cursor(const double delta_time) {
 
 #else
 
-#include <string.h>
-
 #include <SDL.h>
 
 #include "Text.h"
@@ -105,7 +103,7 @@ void terminate_cursor(void) {
         destroy_geometry(tooltip_geometry);
 
         if (tooltip_string) {
-                free(tooltip_string);
+                xfree(tooltip_string);
                 tooltip_string = NULL;
         }
 
@@ -129,10 +127,10 @@ void set_tooltip_text(char *const text) {
         }
 
         if (tooltip_string) {
-                free(tooltip_string);
+                xfree(tooltip_string);
         }
 
-        tooltip_string = strdup(text);
+        tooltip_string = xstrdup(text);
         set_text_string(&tooltip_text, tooltip_string);
 }
 

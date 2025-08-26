@@ -2,7 +2,6 @@
 
 #include <assert.h>
 #include <stdint.h>
-#include <string.h>
 
 #include <SDL.h>
 
@@ -139,7 +138,7 @@ void deinitialize_button(struct Button *const button) {
                 }
 
                 if (button->implementation->tooltip_text) {
-                        free(button->implementation->tooltip_text);
+                        xfree(button->implementation->tooltip_text);
                 }
 
                 xfree(button->implementation);
@@ -216,7 +215,7 @@ void set_button_tooltip_text(struct Button *const button, char *const tooltip_te
                 xfree(button->implementation->tooltip_text);
         }
 
-        button->implementation->tooltip_text = strdup(tooltip_text);
+        button->implementation->tooltip_text = xstrdup(tooltip_text);
 }
 
 void button_receive_event(struct Button *const button, const SDL_Event *const event) {
