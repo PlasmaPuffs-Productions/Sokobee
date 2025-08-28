@@ -19,14 +19,22 @@ static void write_play_icon_geometry(struct Icon *);
 static void write_undo_icon_geometry(struct Icon *);
 static void write_redo_icon_geometry(struct Icon *);
 static void write_restart_icon_geometry(struct Icon *);
+static void write_sounds_on_icon_geometry(struct Icon *);
+static void write_sounds_off_icon_geometry(struct Icon *);
+static void write_music_on_icon_geometry(struct Icon *);
+static void write_music_off_icon_geometry(struct Icon *);
 static void write_exit_icon_geometry(struct Icon *);
 
 static void(*icon_geometry_writers[ICON_COUNT])(struct Icon *) = {
-        [ICON_PLAY]    = write_play_icon_geometry,
-        [ICON_UNDO]    = write_undo_icon_geometry,
-        [ICON_REDO]    = write_redo_icon_geometry,
-        [ICON_RESTART] = write_restart_icon_geometry,
-        [ICON_EXIT]    = write_exit_icon_geometry
+        [ICON_PLAY]       = write_play_icon_geometry,
+        [ICON_UNDO]       = write_undo_icon_geometry,
+        [ICON_REDO]       = write_redo_icon_geometry,
+        [ICON_RESTART]    = write_restart_icon_geometry,
+        [ICON_SOUNDS_ON]  = write_sounds_on_icon_geometry,
+        [ICON_SOUNDS_OFF] = write_sounds_off_icon_geometry,
+        [ICON_MUSIC_ON]   = write_music_on_icon_geometry,
+        [ICON_MUSIC_OFF]  = write_music_off_icon_geometry,
+        [ICON_EXIT]       = write_exit_icon_geometry
 };
 
 struct Icon *create_icon(const enum IconType type) {
@@ -296,4 +304,123 @@ static void write_exit_icon_geometry(struct Icon *const icon) {
         write_circular_arc_geometry(icon->geometry, brx - line_width / 2.0f, bry - line_width / 2.0f, line_width, M_PI_2, M_PI * 2.0f, true);
 
         write_rounded_triangle_geometry(icon->geometry, x1, y1, x2, y2, x3, y3, line_width / 2.0f);
+}
+
+static inline void write_speaker_geometry(struct Icon *const icon) {
+        float x1 = 0.10, y1 = 0.35;
+        float x2 = 0.35, y2 = 0.35;
+        float x3 = 0.35, y3 = 0.65;
+        float x4 = 0.10, y4 = 0.65;
+        transform_icon_point(icon, &x1, &y1);
+        transform_icon_point(icon, &x2, &y2);
+        transform_icon_point(icon, &x3, &y3);
+        transform_icon_point(icon, &x4, &y4);
+
+        float x5 = 0.15, y5 = 0.5;
+        float x6 = 0.5,  y6 = 0.1;
+        float x7 = 0.5,  y7 = 0.9;
+        transform_icon_point(icon, &x5, &y5);
+        transform_icon_point(icon, &x6, &y6);
+        transform_icon_point(icon, &x7, &y7);
+
+        const float rounded_radius = icon->size / 20.0f;
+
+        write_rounded_quadrilateral_geometry(icon->geometry, x1, y1, x2, y2, x3, y3, x4, y4, rounded_radius);
+        write_rounded_triangle_geometry(     icon->geometry, x5, y5, x6, y6, x7, y7,         rounded_radius);
+}
+
+static void write_sounds_on_icon_geometry(struct Icon *const icon) {
+        float x = 0.5, y = 0.5;
+        transform_icon_point(icon, &x, &y);
+
+        clear_geometry(icon->geometry);
+        write_speaker_geometry(icon);
+
+        static const float start_angle = M_PI_2 - M_PI_4;
+        static const float end_angle   = M_PI + M_PI_2 + M_PI_4;
+
+        const float radius_x   = icon->size / 10.0f;
+        const float radius_y   = icon->size /  9.0f;
+        const float line_width = icon->size / 10.0f;
+
+        write_elliptical_arc_outline_geometry(icon->geometry, x, y, radius_x * 1.0f, radius_y * 1.0f, 0.0f, line_width, start_angle, end_angle, true, LINE_CAP_BOTH);
+        write_elliptical_arc_outline_geometry(icon->geometry, x, y, radius_x * 2.5f, radius_y * 2.5f, 0.0f, line_width, start_angle, end_angle, true, LINE_CAP_BOTH);
+        write_elliptical_arc_outline_geometry(icon->geometry, x, y, radius_x * 4.0f, radius_y * 4.0f, 0.0f, line_width, start_angle, end_angle, true, LINE_CAP_BOTH);
+}
+
+static void write_sounds_off_icon_geometry(struct Icon *const icon) {
+        float x1 = 0.6, y1 = 0.35;
+        float x2 = 0.9, y2 = 0.65;
+        float x3 = 0.6, y3 = 0.65;
+        float x4 = 0.9, y4 = 0.35;
+        transform_icon_point(icon, &x1, &y1);
+        transform_icon_point(icon, &x2, &y2);
+        transform_icon_point(icon, &x3, &y3);
+        transform_icon_point(icon, &x4, &y4);
+
+        clear_geometry(icon->geometry);
+        write_speaker_geometry(icon);
+
+        const float line_width = icon->size / 10.0f;
+
+        write_line_geometry(icon->geometry, x1, y1, x2, y2, line_width, LINE_CAP_BOTH);
+        write_line_geometry(icon->geometry, x3, y3, x4, y4, line_width, LINE_CAP_BOTH);
+}
+
+static void write_music_note_geometry(struct Icon *const icon) {
+        float x1 = 0.25, y1 = 0.2;
+        float x2 = 0.25, y2 = 0.4;
+        float x3 = 0.85, y3 = 0.3;
+        float x4 = 0.85, y4 = 0.1;
+        transform_icon_point(icon, &x1, &y1);
+        transform_icon_point(icon, &x2, &y2);
+        transform_icon_point(icon, &x3, &y3);
+        transform_icon_point(icon, &x4, &y4);
+
+        float x5 = 0.3, y5 = 0.25;
+        float x6 = 0.3, y6 = 0.8;
+        transform_icon_point(icon, &x5, &y5);
+        transform_icon_point(icon, &x6, &y6);
+
+        float x7 = 0.8, y7 = 0.15;
+        float x8 = 0.8, y8 = 0.7;
+        transform_icon_point(icon, &x7, &y7);
+        transform_icon_point(icon, &x8, &y8);
+
+        float x9  = 0.725, y9  = 0.7;
+        float x10 = 0.225, y10 = 0.8;
+        transform_icon_point(icon,  &x9,  &y9);
+        transform_icon_point(icon, &x10, &y10);
+
+        const float line_width     = icon->size / 10.0f;
+        const float radius_x       = icon->size /  7.5f;
+        const float radius_y       = icon->size / 10.0f;
+        const float rounded_radius = icon->size / 20.0f;
+
+        write_rounded_quadrilateral_geometry(icon->geometry, x1, y1, x2, y2, x3, y3, x4, y4, rounded_radius);
+
+        write_line_geometry(icon->geometry, x5, y5, x6, y6, line_width, LINE_CAP_NONE);
+        write_line_geometry(icon->geometry, x7, y7, x8, y8, line_width, LINE_CAP_NONE);
+
+        write_ellipse_geometry(icon->geometry,  x9,  y9, radius_x, radius_y, M_PI_4 / -2.0f);
+        write_ellipse_geometry(icon->geometry, x10, y10, radius_x, radius_y, M_PI_4 / -2.0f);
+}
+
+static void write_music_on_icon_geometry(struct Icon *const icon) {
+        clear_geometry(icon->geometry);
+        write_music_note_geometry(icon);
+}
+
+static void write_music_off_icon_geometry(struct Icon *const icon) {
+        float x1 = 0.15, y1 = 0.15;
+        float x2 = 0.85, y2 = 0.85;
+        transform_icon_point(icon, &x1, &y1);
+        transform_icon_point(icon, &x2, &y2);
+
+        clear_geometry(icon->geometry);
+        write_music_note_geometry(icon);
+
+        const float line_width = icon->size / 10.0f;
+
+        write_line_geometry(icon->geometry, x1, y1, x2, y2, line_width, LINE_CAP_BOTH);
 }

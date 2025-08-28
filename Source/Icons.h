@@ -2,13 +2,17 @@
 
 #include <SDL.h>
 
-#define ICON_COUNT 5ULL
 enum IconType {
         ICON_PLAY,
         ICON_UNDO,
         ICON_REDO,
         ICON_EXIT,
-        ICON_RESTART
+        ICON_SOUNDS_ON,
+        ICON_SOUNDS_OFF,
+        ICON_MUSIC_ON,
+        ICON_MUSIC_OFF,
+        ICON_RESTART,
+        ICON_COUNT
 };
 
 struct Icon;
@@ -26,15 +30,3 @@ void set_icon_size(struct Icon *const icon, const float size);
 void set_icon_position(struct Icon *const icon, const float x, const float y);
 
 void set_icon_rotation(struct Icon *const icon, const float rotation);
-
-/*
-TODO:
-Exit / Close ✕ (X)
-Settings / Gear ⚙ (maybe more complex, could approximate with a hexagon + cuts)
-Volume on/off 🔊 / 🔇 (speaker + wave or slash)
-Music toggle 🎵 (maybe just a note shape)
-Fullscreen toggle ⛶ (rectangle with arrows)
-Info / About ℹ (circle with an ‘i’—can be a filled circle + small line)
-Question mark ? (maybe simplified)
-Menu (three vertical lines or 3x3 grid)
-*/

@@ -107,7 +107,7 @@ void render_geometry(const struct Geometry *const geometry) {
                 0,                             // Texcoord Stride
                 (int)geometry->vertex_count,   // Vertex Count
                 geometry->indices,             // Indices
-                geometry->index_count,         // Index Count
+                (int)geometry->index_count,    // Index Count
                 (int)INDEX_STRIDE              // Index Size (Stride)
         );
 }
@@ -149,6 +149,20 @@ static inline uint16_t add_geometry_vertex(struct Geometry *const geometry, cons
         geometry->positions[position_index + 1ULL] = y;
 
         return (uint16_t)geometry->vertex_count++;
+}
+
+void write_triangle_geometry(
+        struct Geometry *const geometry,
+        const float x1, const float y1,
+        const float x2, const float y2,
+        const float x3, const float y3
+) {
+        secure_geometry_vertex_capacity(geometry, geometry->vertex_count + 3ULL);
+        secure_geometry_index_capacity(geometry, geometry->index_count + 3ULL);
+
+        geometry->indices[geometry->index_count++] = add_geometry_vertex(geometry, x1, y1);
+        geometry->indices[geometry->index_count++] = add_geometry_vertex(geometry, x2, y2);
+        geometry->indices[geometry->index_count++] = add_geometry_vertex(geometry, x3, y3);
 }
 
 void write_line_geometry(
@@ -212,20 +226,6 @@ void write_rectangle_geometry(
         rotate_point(&x4, &y4, x, y, rotation);
 
         write_quadrilateral_geometry(geometry, x1, y1, x2, y2, x3, y3, x4, y4);
-}
-
-void write_triangle_geometry(
-        struct Geometry *const geometry,
-        const float x1, const float y1,
-        const float x2, const float y2,
-        const float x3, const float y3
-) {
-        secure_geometry_vertex_capacity(geometry, geometry->vertex_count + 3ULL);
-        secure_geometry_index_capacity(geometry, geometry->index_count + 3ULL);
-
-        geometry->indices[geometry->index_count++] = add_geometry_vertex(geometry, x1, y1);
-        geometry->indices[geometry->index_count++] = add_geometry_vertex(geometry, x2, y2);
-        geometry->indices[geometry->index_count++] = add_geometry_vertex(geometry, x3, y3);
 }
 
 void write_quadrilateral_geometry(
@@ -383,16 +383,10 @@ void write_elliptical_arc_outline_geometry(
                 return;
         }
 
-        float angle1 = start_angle;
-        float angle2 = end_angle;
-        float angle_span = angle2 - angle1;
-        if (clockwise) {
-                angle1 = end_angle;
-                angle2 = start_angle;
-                angle_span = angle2 - angle1;
-        }
-
-        if (angle_span <= 0.0f) {
+        float angle_span = end_angle - start_angle;
+        if (clockwise && angle_span > 0.0f) {
+                angle_span -= 2.0f * (float)M_PI;
+        } else if (!clockwise && angle_span < 0.0f) {
                 angle_span += 2.0f * (float)M_PI;
         }
 
@@ -425,8 +419,13 @@ void write_elliptical_arc_outline_geometry(
         const float sin = sinf(rotation);
         const uint16_t start_index = (uint16_t)geometry->vertex_count;
 
+        // HACK: Keeping track of the triangle vertices at the start and end of the triangle strip to accurately calculate the
+        // positions (centers) of the line cap arcs since I can't get it to look aligned visually.
+        float inner_x1, inner_y1, inner_x2, inner_y2;
+        float outer_x1, outer_y1, outer_x2, outer_y2;
+
         for (size_t index = 0ULL; index <= resolution; ++index) {
-                const float angle = angle1 + angle_span * (float)index / (float)resolution;
+                const float angle = start_angle + angle_span * (float)index / (float)resolution;
 
                 const float x_outer = outer_radius_x * cosf(angle);
                 const float y_outer = outer_radius_y * sinf(angle);
@@ -439,6 +438,20 @@ void write_elliptical_arc_outline_geometry(
 
                 const float rx_inner = x_inner * cos - y_inner * sin;
                 const float ry_inner = x_inner * sin + y_inner * cos;
+
+                if (index == 0LL) {
+                        inner_x1 = cx + rx_inner;
+                        inner_y1 = cy + ry_inner;
+                        outer_x1 = cx + rx_outer;
+                        outer_y1 = cy + ry_outer;
+                }
+
+                if (index == resolution) {
+                        inner_x2 = cx + rx_inner;
+                        inner_y2 = cy + ry_inner;
+                        outer_x2 = cx + rx_outer;
+                        outer_y2 = cy + ry_outer;
+                }
 
                 add_geometry_vertex(geometry, cx + rx_outer, cy + ry_outer);
                 add_geometry_vertex(geometry, cx + rx_inner, cy + ry_inner);
@@ -458,58 +471,57 @@ void write_elliptical_arc_outline_geometry(
 
         const float cap_radius = line_width / 2.0f;
 
+        // HACK: Using an arbitrary offset to add to the angle to the arcs since the angle of both arcs are just slightly off for some reason.
+        static const float angle_offset = M_PI_4 / 4.0f;
+
         if ((rounded_caps & LINE_CAP_START) == LINE_CAP_START || (rounded_caps & LINE_CAP_BOTH) == LINE_CAP_BOTH) {
-                const float x = outer_radius_x * cosf(angle2);
-                const float y = outer_radius_y * sinf(angle2);
+                const float x = outer_radius_x * cosf(start_angle);
+                const float y = outer_radius_y * sinf(start_angle);
 
                 const float rx = x * cos - y * sin;
                 const float ry = x * sin + y * cos;
 
-                const float dx = -ry * sinf(angle2);
-                const float dy =  rx * cosf(angle2);
-                const float tangent_angle = atan2f(dy * cos + dx * sin, dx * cos - dy * sin);
+                const float dx0 = -outer_radius_x * sinf(start_angle);
+                const float dy0 =  outer_radius_y * cosf(start_angle);
 
-                float nx =  dy;
-                float ny = -dx;
-                const float length1 = sqrtf(nx * nx + ny * ny);
-                nx /= length1;
-                ny /= length1;
+                const float dx = dx0 * cos - dy0 * sin;
+                const float dy = dx0 * sin + dy0 * cos;
+
+                const float tangent_angle = atan2f(dy, dx);
 
                 write_circular_arc_geometry(
                         geometry,
-                        cx + rx - nx * cap_radius,
-                        cy + ry - ny * cap_radius,
+                        (inner_x1 + outer_x1) / 2.0f,
+                        (inner_y1 + outer_y1) / 2.0f,
                         cap_radius,
-                        tangent_angle + M_PI / 2.0f,
-                        tangent_angle - M_PI / 2.0f,
+                        tangent_angle - M_PI_2 - angle_offset,
+                        tangent_angle + M_PI_2 + angle_offset,
                         false
                 );
         }
 
         if ((rounded_caps & LINE_CAP_END) == LINE_CAP_END || (rounded_caps & LINE_CAP_BOTH) == LINE_CAP_BOTH) {
-                const float x = outer_radius_x * cosf(angle1);
-                const float y = outer_radius_y * sinf(angle1);
+                const float x = outer_radius_x * cosf(end_angle);
+                const float y = outer_radius_y * sinf(end_angle);
 
                 const float rx = x * cos - y * sin;
                 const float ry = x * sin + y * cos;
 
-                const float dx = -ry * sinf(angle1);
-                const float dy =  rx * cosf(angle1);
-                const float tangent_angle = atan2f(dy * cos + dx * sin, dx * cos - dy * sin);
+                float dx0 = -outer_radius_x * sinf(end_angle);
+                float dy0 =  outer_radius_y * cosf(end_angle);
 
-                float nx =  dy;
-                float ny = -dx;
-                const float length1 = sqrtf(nx * nx + ny * ny);
-                nx /= length1;
-                ny /= length1;
+                float dx = dx0 * cos - dy0 * sin;
+                float dy = dx0 * sin + dy0 * cos;
+
+                const float tangent_angle = atan2f(dy, dx);
 
                 write_circular_arc_geometry(
                         geometry,
-                        cx + rx - nx * cap_radius,
-                        cy + ry - ny * cap_radius,
+                        (inner_x2 + outer_x2) / 2.0f,
+                        (inner_y2 + outer_y2) / 2.0f,
                         cap_radius,
-                        tangent_angle + M_PI / 2.0f,
-                        tangent_angle - M_PI / 2.0f,
+                        tangent_angle + M_PI_2 - angle_offset,
+                        tangent_angle - M_PI_2 + angle_offset,
                         false
                 );
         }
@@ -686,19 +698,12 @@ void write_rounded_triangle_geometry(
         const float double_signed_area = (vx[1] - vx[0]) * (vy[2] - vy[0]) - (vy[1] - vy[0]) * (vx[2] - vx[0]);
         const bool counterclockwise = double_signed_area > 0.0f;
 
-        // index0 - Current Vertex
-        // index1 - Next Vertex
-        // index2 - Previous Vertex
-
         float maximum_radius = FLT_MAX;
-        for (uint8_t index0 = 0; index0 < 3; ++index0) {
-                const uint8_t index1 = (index0 + 1) % 3;
-                const uint8_t index2 = (index0 + 2) % 3;
-
-                float edge1_x = vx[index1] - vx[index0];
-                float edge1_y = vy[index1] - vy[index0];
-                float edge2_x = vx[index2] - vx[index0];
-                float edge2_y = vy[index2] - vy[index0];
+        for (uint8_t index = 0; index < 3; ++index) {
+                float edge1_x = vx[(index + 1) % 3] - vx[index];
+                float edge1_y = vy[(index + 1) % 3] - vy[index];
+                float edge2_x = vx[(index + 2) % 3] - vx[index];
+                float edge2_y = vy[(index + 2) % 3] - vy[index];
 
                 const float length1 = sqrtf(edge1_x * edge1_x + edge1_y * edge1_y);
                 const float length2 = sqrtf(edge2_x * edge2_x + edge2_y * edge2_y);
@@ -720,22 +725,15 @@ void write_rounded_triangle_geometry(
 
         const float clamped_rounded_radius = fminf(rounded_radius, maximum_radius);
 
-        float center_x  [3], center_y  [3];
+        float   center_x[3],   center_y[3];
         float tangent1_x[3], tangent1_y[3];
         float tangent2_x[3], tangent2_y[3];
 
-        // index0 - Current Vertex
-        // index1 - Next Vertex
-        // index2 - Previous Vertex
-
-        for (uint8_t index0 = 0; index0 < 3; ++index0) {
-                const uint8_t index1 = (index0 + 1) % 3;
-                const uint8_t index2 = (index0 + 2) % 3;
-
-                float edge1_x = vx[index1] - vx[index0];
-                float edge1_y = vy[index1] - vy[index0];
-                float edge2_x = vx[index2] - vx[index0];
-                float edge2_y = vy[index2] - vy[index0];
+        for (uint8_t index = 0; index < 3; ++index) {
+                float edge1_x = vx[(index + 1) % 3] - vx[index];
+                float edge1_y = vy[(index + 1) % 3] - vy[index];
+                float edge2_x = vx[(index + 2) % 3] - vx[index];
+                float edge2_y = vy[(index + 2) % 3] - vy[index];
 
                 const float length1 = sqrtf(edge1_x * edge1_x + edge1_y * edge1_y);
                 const float length2 = sqrtf(edge2_x * edge2_x + edge2_y * edge2_y);
@@ -763,30 +761,28 @@ void write_rounded_triangle_geometry(
                         distance = length2;
                 }
 
-                tangent1_x[index0] = vx[index0] + edge1_x * distance;
-                tangent1_y[index0] = vy[index0] + edge1_y * distance;
-                tangent2_x[index0] = vx[index0] + edge2_x * distance;
-                tangent2_y[index0] = vy[index0] + edge2_y * distance;
+                tangent1_x[index] = vx[index] + edge1_x * distance;
+                tangent1_y[index] = vy[index] + edge1_y * distance;
+                tangent2_x[index] = vx[index] + edge2_x * distance;
+                tangent2_y[index] = vy[index] + edge2_y * distance;
 
-                float bisector_x = edge1_x + edge2_x, bisector_y = edge1_y + edge2_y;
+                const float bisector_x = edge1_x + edge2_x;
+                const float bisector_y = edge1_y + edge2_y;
                 const float bisector_length = sqrtf(bisector_x * bisector_x + bisector_y * bisector_y);
                 if (bisector_length == 0.0f) {
                         continue;
                 }
-
-                bisector_x /= bisector_length;
-                bisector_y /= bisector_length;
 
                 const float sine = sinf(theta / 2.0f);
                 if (sine == 0.0f) {
                         continue;
                 }
 
-                center_x[index0] = vx[index0] + bisector_x * clamped_rounded_radius / sine;
-                center_y[index0] = vy[index0] + bisector_y * clamped_rounded_radius / sine;
+                center_x[index] = vx[index] + (bisector_x / bisector_length) * clamped_rounded_radius / sine;
+                center_y[index] = vy[index] + (bisector_y / bisector_length) * clamped_rounded_radius / sine;
 
-                const float angle1 = atan2f(tangent1_y[index0] - center_y[index0], tangent1_x[index0] - center_x[index0]);
-                const float angle2 = atan2f(tangent2_y[index0] - center_y[index0], tangent2_x[index0] - center_x[index0]);
+                const float angle1 = atan2f(tangent1_y[index] - center_y[index], tangent1_x[index] - center_x[index]);
+                const float angle2 = atan2f(tangent2_y[index] - center_y[index], tangent2_x[index] - center_x[index]);
                 float delta = angle2 - angle1;
 
                 while (delta <= -M_PI) {
@@ -799,52 +795,34 @@ void write_rounded_triangle_geometry(
 
                 write_circular_arc_geometry(
                         geometry,
-                        center_x[index0],
-                        center_y[index0],
+                        center_x[index],
+                        center_y[index],
                         clamped_rounded_radius,
                         angle1, angle2,
                         delta < 0.0f
                 );
         }
 
-        // index0 - Current Vertex
-        // index1 - Next Vertex
-        // index2 - Previous Vertex
+        for (uint8_t index = 0; index < 3; ++index) {
+                const float x1 = tangent1_x[index];
+                const float y1 = tangent1_y[index];
+                const float x2 = tangent2_x[(index + 1) % 3];
+                const float y2 = tangent2_y[(index + 1) % 3];
 
-        for (uint8_t index0 = 0; index0 < 3; ++index0) {
-                const uint8_t index1 = (index0 + 1) % 3;
-
-                float x1 = tangent1_x[index0];
-                float y1 = tangent1_y[index0];
-                float x2 = tangent2_x[index1];
-                float y2 = tangent2_y[index1];
-
-                float distance_x = x2 - x1;
-                float distance_y = y2 - y1;
+                const float distance_x = x2 - x1;
+                const float distance_y = y2 - y1;
                 const float length = sqrtf(distance_x * distance_x + distance_y * distance_y);
                 if (length == 0.0f) {
                         continue;
                 }
 
-                distance_x /= length;
-                distance_y /= length;
-
-                float normal_x = -distance_y;
-                float normal_y = distance_x;
-                if (!counterclockwise) {
-                        normal_x = -normal_x;
-                        normal_y = -normal_y;
-                }
-
-                x1 += normal_x * clamped_rounded_radius / 2.0f;
-                y1 += normal_y * clamped_rounded_radius / 2.0f;
-                x2 += normal_x * clamped_rounded_radius / 2.0f;
-                y2 += normal_y * clamped_rounded_radius / 2.0f;
+                const float offset_x = (clamped_rounded_radius / 2.0f) * (counterclockwise ? -distance_y : distance_y) / length;
+                const float offset_y = (clamped_rounded_radius / 2.0f) * (counterclockwise ? distance_x : -distance_x) / length;
 
                 write_line_geometry(
                         geometry,
-                        x1, y1,
-                        x2, y2,
+                        x1 + offset_x, y1 + offset_y,
+                        x2 + offset_x, y2 + offset_y,
                         clamped_rounded_radius,
                         LINE_CAP_NONE
                 );
@@ -908,4 +886,165 @@ void write_rounded_rectangle_geometry(
         write_rectangle_geometry(geometry, x, y, w - radius * 2.0f, h, rotation);
         write_line_geometry(geometry, x5, y5, x6, y6, radius, LINE_CAP_NONE);
         write_line_geometry(geometry, x7, y7, x8, y8, radius, LINE_CAP_NONE);
+}
+
+void write_rounded_quadrilateral_geometry(
+        struct Geometry *const geometry,
+        const float x1, const float y1,
+        const float x2, const float y2,
+        const float x3, const float y3,
+        const float x4, const float y4,
+        const float rounded_radius
+) {
+        if (rounded_radius <= 0.0f) {
+                write_quadrilateral_geometry(geometry, x1, y1, x2, y2, x3, y3, x4, y4);
+                return;
+        }
+
+        const float vx[4] = {x1, x2, x3, x4};
+        const float vy[4] = {y1, y2, y3, y4};
+
+        const float double_signed_area = (vx[1] - vx[0]) * (vy[2] - vy[0]) - (vy[1] - vy[0]) * (vx[2] - vx[0]);
+        const bool counterclockwise = double_signed_area > 0.0f;
+
+        float maximum_radius = FLT_MAX;
+        for (uint8_t index = 0; index < 4; ++index) {
+                float edge1_x = vx[(index + 1) % 4] - vx[index];
+                float edge1_y = vy[(index + 1) % 4] - vy[index];
+                float edge2_x = vx[(index + 3) % 4] - vx[index];
+                float edge2_y = vy[(index + 3) % 4] - vy[index];
+
+                float length1 = sqrtf(edge1_x * edge1_x + edge1_y * edge1_y);
+                float length2 = sqrtf(edge2_x * edge2_x + edge2_y * edge2_y);
+                if (length1 == 0.0f || length2 == 0.0f) {
+                        continue;
+                }
+
+                edge1_x /= length1;
+                edge1_y /= length1;
+                edge2_x /= length2;
+                edge2_y /= length2;
+
+                const float dot12 = fmaxf(-1.0f, fminf(1.0f, edge1_x * edge2_x + edge1_y * edge2_y));
+                const float maximum_side_radius = fminf(length1, length2) * tanf(acosf(dot12) / 2.0f);
+                if (maximum_side_radius < maximum_radius) {
+                        maximum_radius = maximum_side_radius;
+                }
+        }
+
+        const float clamped_radius = fminf(rounded_radius, maximum_radius);
+
+        float   center_x[4],   center_y[4];
+        float tangent1_x[4], tangent1_y[4];
+        float tangent2_x[4], tangent2_y[4];
+
+        for (uint8_t index = 0; index < 4; ++index) {
+                float edge1_x = vx[(index + 1) % 4] - vx[index];
+                float edge1_y = vy[(index + 1) % 4] - vy[index];
+                float edge2_x = vx[(index + 3) % 4] - vx[index];
+                float edge2_y = vy[(index + 3) % 4] - vy[index];
+
+                const float length1 = sqrtf(edge1_x * edge1_x + edge1_y * edge1_y);
+                const float length2 = sqrtf(edge2_x * edge2_x + edge2_y * edge2_y);
+                if (length1 == 0.0f || length2 == 0.0f) {
+                        continue;
+                }
+
+                edge1_x /= length1;
+                edge1_y /= length1;
+                edge2_x /= length2;
+                edge2_y /= length2;
+
+                const float theta = acosf(fmaxf(-1.0f, fminf(1.0f, edge1_x * edge2_x + edge1_y * edge2_y)));
+                const float tangent = tanf(theta / 2.0f);
+                if (tangent == 0.0f) {
+                        continue;
+                }
+
+                float distance = clamped_radius / tangent;
+
+                if (distance > length1) {
+                        distance = length1;
+                }
+
+                if (distance > length2) {
+                        distance = length2;
+                }
+
+                tangent1_x[index] = vx[index] + edge1_x * distance;
+                tangent1_y[index] = vy[index] + edge1_y * distance;
+                tangent2_x[index] = vx[index] + edge2_x * distance;
+                tangent2_y[index] = vy[index] + edge2_y * distance;
+
+                const float bisector_x = edge1_x + edge2_x;
+                const float bisector_y = edge1_y + edge2_y;
+                const float bisector_length = sqrtf(bisector_x * bisector_x + bisector_y * bisector_y);
+                if (bisector_length == 0.0f) {
+                        continue;
+                }
+
+                const float sine = sinf(theta / 2.0f);
+                if (sine == 0.0f) {
+                        continue;
+                }
+
+                center_x[index] = vx[index] + (bisector_x / bisector_length) * clamped_radius / sine;
+                center_y[index] = vy[index] + (bisector_y / bisector_length) * clamped_radius / sine;
+
+                float angle1 = atan2f(tangent1_y[index] - center_y[index], tangent1_x[index] - center_x[index]);
+                float angle2 = atan2f(tangent2_y[index] - center_y[index], tangent2_x[index] - center_x[index]);
+                float delta = angle2 - angle1;
+
+                while (delta <= -M_PI) {
+                        delta += 2.0f * (float)M_PI;
+                }
+
+                while (delta > M_PI) {
+                        delta -= 2.0f * (float)M_PI;
+                }
+
+                write_circular_arc_geometry(
+                        geometry,
+                        center_x[index],
+                        center_y[index],
+                        clamped_radius,
+                        angle1, angle2,
+                        delta < 0.0f
+                );
+        }
+
+        for (uint8_t index = 0; index < 4; ++index) {
+                const float x1 = tangent1_x[index];
+                const float y1 = tangent1_y[index];
+                const float x2 = tangent2_x[(index + 1) % 4];
+                const float y2 = tangent2_y[(index + 1) % 4];
+
+                const float distance_x = x2 - x1;
+                const float distance_y = y2 - y1;
+                const float length = sqrtf(distance_x * distance_x + distance_y * distance_y);
+                if (length == 0.0f) {
+                        continue;
+                }
+
+                const float offset_x = (clamped_radius / 2.0f) * (counterclockwise ? -distance_y : distance_y) / length;
+                const float offset_y = (clamped_radius / 2.0f) * (counterclockwise ? distance_x : -distance_x) / length;
+
+                write_line_geometry(
+                        geometry,
+                        x1 + offset_x, y1 + offset_y,
+                        x2 + offset_x, y2 + offset_y,
+                        clamped_radius,
+                        LINE_CAP_NONE
+                );
+        }
+
+        // NOTE: Using two lines (quads) and one large quad in the center instead of one line (quad) for each edge with one quad in the center
+        // would be more efficient as it uses two less quads, but I couldn't make that work when it comes to quads that aren't rectangular.
+        write_quadrilateral_geometry(
+                geometry,
+                center_x[0], center_y[0],
+                center_x[1], center_y[1],
+                center_x[2], center_y[2],
+                center_x[3], center_y[3]
+        );
 }

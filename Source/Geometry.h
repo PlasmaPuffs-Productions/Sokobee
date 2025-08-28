@@ -165,3 +165,12 @@ void write_rounded_rectangle_geometry(
         const float rounded_radius,
         const float rotation
 );
+
+void write_rounded_quadrilateral_geometry(
+        struct Geometry *const geometry,
+        const float x1, const float y1,
+        const float x2, const float y2,
+        const float x3, const float y3,
+        const float x4, const float y4,
+        const float rounded_radius
+);

@@ -30,6 +30,8 @@ static struct Button undo_button;
 static struct Button redo_button;
 static struct Button restart_button;
 static struct Button quit_button;
+static struct Button sounds_button;
+static struct Button music_button;
 
 static bool initialize_playing_scene(void);
 static void present_playing_scene(void);
@@ -75,7 +77,7 @@ static bool initialize_playing_scene(void) {
 
         initialize_button(&undo_button, true);
         undo_button.grid_anchor_x = 1.0f;
-        undo_button.tile_offset_column = -3;
+        undo_button.tile_offset_column = -5;
         undo_button.callback = simulate_key_press;
         undo_button.callback_data = (void *)(intptr_t)SDLK_z;
         set_button_tooltip_text(&undo_button, "Undo");
@@ -83,7 +85,7 @@ static bool initialize_playing_scene(void) {
 
         initialize_button(&redo_button, true);
         redo_button.grid_anchor_x = 1.0f;
-        redo_button.tile_offset_column = -2;
+        redo_button.tile_offset_column = -4;
         redo_button.callback = simulate_key_press;
         redo_button.callback_data = (void *)(intptr_t)SDLK_x;
         set_button_tooltip_text(&redo_button, "Redo");
@@ -91,7 +93,7 @@ static bool initialize_playing_scene(void) {
 
         initialize_button(&restart_button, true);
         restart_button.grid_anchor_x = 1.0f;
-        restart_button.tile_offset_column = -1;
+        restart_button.tile_offset_column = -3;
         restart_button.callback = simulate_key_press;
         restart_button.callback_data = (void *)(intptr_t)SDLK_r;
         set_button_tooltip_text(&restart_button, "Restart Level");
@@ -99,13 +101,29 @@ static bool initialize_playing_scene(void) {
 
         initialize_button(&quit_button, true);
         quit_button.grid_anchor_x = 1.0f;
+        quit_button.tile_offset_column = -2;
         quit_button.callback = quit_callback;
         set_button_tooltip_text(&quit_button, "Quit Level");
         set_button_surface_icon(&quit_button, ICON_EXIT);
 
-        redo_button.thickness_mask &= ~HEXAGON_THICKNESS_MASK_LEFT;
-        redo_button.thickness_mask &= ~HEXAGON_THICKNESS_MASK_RIGHT;
-        quit_button.thickness_mask &= ~HEXAGON_THICKNESS_MASK_LEFT;
+        initialize_button(&sounds_button, true);
+        sounds_button.grid_anchor_x = 1.0f;
+        sounds_button.tile_offset_column = -1;
+        sounds_button.callback = quit_callback;
+        set_button_tooltip_text(&sounds_button, "Toggle Sounds");
+        set_button_surface_icon(&sounds_button, ICON_SOUNDS_ON);
+
+        initialize_button(&music_button, true);
+        music_button.grid_anchor_x = 1.0f;
+        music_button.callback = quit_callback;
+        set_button_tooltip_text(&music_button, "Toggle Music");
+        set_button_surface_icon(&music_button, ICON_MUSIC_ON);
+
+        redo_button.thickness_mask  &= ~HEXAGON_THICKNESS_MASK_LEFT;
+        redo_button.thickness_mask  &= ~HEXAGON_THICKNESS_MASK_RIGHT;
+        quit_button.thickness_mask  &= ~HEXAGON_THICKNESS_MASK_LEFT;
+        quit_button.thickness_mask  &= ~HEXAGON_THICKNESS_MASK_RIGHT;
+        music_button.thickness_mask &= ~HEXAGON_THICKNESS_MASK_LEFT;
 
         initialize_animation(&move_count_pulse, 2ULL);
 
@@ -187,6 +205,8 @@ static void playing_scene_receive_event(const SDL_Event *const event) {
         button_receive_event(&redo_button, event);
         button_receive_event(&restart_button, event);
         button_receive_event(&quit_button, event);
+        button_receive_event(&sounds_button, event);
+        button_receive_event(&music_button, event);
 }
 
 static void update_playing_scene(const double delta_time) {
@@ -226,6 +246,8 @@ static void update_playing_scene(const double delta_time) {
         update_button(&redo_button, delta_time);
         update_button(&restart_button, delta_time);
         update_button(&quit_button, delta_time);
+        update_button(&sounds_button, delta_time);
+        update_button(&music_button, delta_time);
 }
 
 static void dismiss_playing_scene(void) {
@@ -240,4 +262,6 @@ static void terminate_playing_scene(void) {
         deinitialize_button(&redo_button);
         deinitialize_button(&restart_button);
         deinitialize_button(&quit_button);
+        deinitialize_button(&sounds_button);
+        deinitialize_button(&music_button);
 }
