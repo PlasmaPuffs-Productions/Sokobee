@@ -6,11 +6,11 @@
 
 #include <SDL.h>
 
+#include "Audio.h"
 #include "cJSON.h"
 #include "Assets.h"
 #include "Context.h"
 #include "Hexagons.h"
-#include "Utilities.h"
 #include "Entities/Entity.h"
 #include "Geometry.h"
 

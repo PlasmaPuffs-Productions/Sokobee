@@ -9,7 +9,7 @@
 #include "../Level.h"
 #include "../Hexagons.h"
 #include "../Animation.h"
-#include "../Utilities.h"
+#include "../Audio.h"
 
 #define SHAKE_DECAY 0.01f
 #define HIT_SHAKE_POWER 0.1f

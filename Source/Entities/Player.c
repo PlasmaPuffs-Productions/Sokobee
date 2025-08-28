@@ -12,7 +12,7 @@
 #include "../Geometry.h"
 #include "../Context.h"
 #include "../Animation.h"
-#include "../Utilities.h"
+#include "../Audio.h"
 
 #define SCALE_ALPHA 0.005f
 

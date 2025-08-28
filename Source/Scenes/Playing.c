@@ -8,6 +8,8 @@
 
 #include "../Assets.h"
 #include "../Button.h"
+#include "../Audio.h"
+#include "../Persistent.h"
 #include "../Animation.h"
 #include "../Utilities.h"
 #include "../Context.h"
@@ -68,6 +70,26 @@ static void quit_callback(void *const data) {
         trigger_transition_layer(back_to_main_menu, NULL);
 }
 
+static void toggle_sound_callback(void *const data) {
+        (void)data;
+
+        const bool sound_enabled = get_persistent_sound_enabled();
+        set_persistent_sound_enabled(!sound_enabled);
+        toggle_sound(!sound_enabled);
+
+        set_button_surface_icon(&sounds_button, sound_enabled ? ICON_SOUNDS_OFF : ICON_SOUNDS_ON);
+}
+
+static void toggle_music_callback(void *const data) {
+        (void)data;
+
+        const bool music_enabled = get_persistent_music_enabled();
+        set_persistent_music_enabled(!music_enabled);
+        toggle_music(!music_enabled);
+
+        set_button_surface_icon(&music_button, music_enabled ? ICON_MUSIC_OFF : ICON_MUSIC_ON);
+}
+
 static bool initialize_playing_scene(void) {
         initialize_text(&level_number_label, "Level: 0", FONT_HEADER_2);
         set_text_color(&level_number_label, COLOR_YELLOW, 255);
@@ -109,15 +131,15 @@ static bool initialize_playing_scene(void) {
         initialize_button(&sounds_button, true);
         sounds_button.grid_anchor_x = 1.0f;
         sounds_button.tile_offset_column = -1;
-        sounds_button.callback = quit_callback;
+        sounds_button.callback = toggle_sound_callback;
         set_button_tooltip_text(&sounds_button, "Toggle Sounds");
-        set_button_surface_icon(&sounds_button, ICON_SOUNDS_ON);
+        set_button_surface_icon(&sounds_button, get_persistent_sound_enabled() ? ICON_SOUNDS_ON : ICON_SOUNDS_OFF);
 
         initialize_button(&music_button, true);
         music_button.grid_anchor_x = 1.0f;
-        music_button.callback = quit_callback;
+        music_button.callback = toggle_music_callback;
         set_button_tooltip_text(&music_button, "Toggle Music");
-        set_button_surface_icon(&music_button, ICON_MUSIC_ON);
+        set_button_surface_icon(&music_button, get_persistent_music_enabled() ? ICON_MUSIC_ON : ICON_MUSIC_OFF);
 
         redo_button.thickness_mask  &= ~HEXAGON_THICKNESS_MASK_LEFT;
         redo_button.thickness_mask  &= ~HEXAGON_THICKNESS_MASK_RIGHT;

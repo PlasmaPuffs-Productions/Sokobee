@@ -301,7 +301,7 @@ static void refresh_debug_panel(void) {
                 set_text_string(&debug_viewport_height_text, debug_text_buffer);
         }
 
-        snprintf(debug_text_buffer, debug_text_buffer_size, "Time:     %.3lfsec", actual_time_elapsed / 1000.0);
+        snprintf(debug_text_buffer, debug_text_buffer_size, "Time:     %.3lfsec", actual_time_elapsed / 100);
         set_text_string(&debug_time_elapsed_text, debug_text_buffer);
 
         time_accumulator = 0.0f;

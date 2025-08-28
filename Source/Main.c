@@ -7,13 +7,14 @@
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 
+#include "Audio.h"
 #include "Debug.h"
 #include "Cursor.h"
 #include "Assets.h"
 #include "Layers.h"
 #include "Context.h"
-#include "Utilities.h"
 #include "Geometry.h"
+#include "Persistent.h"
 #include "Scenes/Scenes.h"
 
 #define WINDOW_MINIMIZED_THROTTLE 100ULL
@@ -42,8 +43,18 @@ int main(void) {
 static void initialize(void) {
         send_message(INFORMATION, "Initializing program...");
 
-        if (SDL_Init(SDL_INIT_EVERYTHING) + Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) + TTF_Init() < 0) {
+        if (SDL_Init(SDL_INIT_EVERYTHING) < 0 || TTF_Init() < 0) {
                 send_message(FATAL, "Failed to initialize program: Failed to initialize SDL: %s", SDL_GetError());
+                terminate(EXIT_FAILURE);
+        }
+
+        if (!load_persistent_data()) {
+                send_message(FATAL, "Failed to initialize program: Failed to load persistent data");
+                terminate(EXIT_FAILURE);
+        }
+
+        if (!initialize_audio()) {
+                send_message(FATAL, "Failed to initialize program: Failed to initialize audio");
                 terminate(EXIT_FAILURE);
         }
 
@@ -69,6 +80,8 @@ static void initialize(void) {
 
         initialize_layers();
         initialize_debug_panel();
+
+        play_music(MUSIC_BGM);
 
         send_message(INFORMATION, "Program initialized successfully");
 }
@@ -119,12 +132,12 @@ static void terminate(const int exit_code) {
         terminate_scene_manager();
         terminate_debug_panel();
         terminate_layers();
+        terminate_cursor();
 
         unload_assets();
         terminate_context();
-        terminate_cursor();
+        terminate_audio();
 
-        Mix_Quit();
         TTF_Quit();
         SDL_Quit();
 

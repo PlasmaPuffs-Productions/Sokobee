@@ -16,9 +16,6 @@ static void unload_fonts(void);
 static bool load_levels(const cJSON *const json);
 static void unload_levels(void);
 
-static bool load_sounds(const cJSON *const json);
-static void unload_sounds(void);
-
 bool load_assets(const char *const path) {
         send_message(INFORMATION, "Assets data file to load: \"%s\"", path);
         char *const json_string = load_text_file(path);
@@ -48,13 +45,6 @@ bool load_assets(const char *const path) {
                 return false;
         }
 
-        if (!load_sounds((const void *)cJSON_GetObjectItemCaseSensitive(json, "sounds"))) {
-                send_message(ERROR, "Failed to load assets: Failed to load sounds");
-                cJSON_Delete(json);
-                unload_assets();
-                return false;
-        }
-
         cJSON_Delete(json);
         return true;
 }
@@ -62,7 +52,6 @@ bool load_assets(const char *const path) {
 void unload_assets(void) {
         unload_fonts();
         unload_levels();
-        unload_sounds();
 }
 
 // ================================================================================================
@@ -207,84 +196,4 @@ static void unload_levels(void) {
         }
 
         xfree(level_metadatas);
-}
-
-// ================================================================================================
-// Sounds
-// ================================================================================================
-
-static Mix_Chunk *sounds[SOUND_COUNT];
-
-void play_sound(const enum Sound sound) {
-        if (!sounds[sound]) {
-                send_message(ERROR, "Failed to play sound %d: Sound is unavailable", (int)sound);
-                return;
-        }
-
-        if (Mix_PlayChannel(-1, sounds[sound], 0) < 0) {
-                send_message(ERROR, "Failed to play sound %d: %s", (int)sound, Mix_GetError());
-        }
-}
-
-static bool load_sounds(const cJSON *const json) {
-        if (!cJSON_IsObject(json)) {
-                send_message(ERROR, "Failed to parse sounds: JSON data is invalid");
-                return false;
-        }
-
-        for (const cJSON *child = json->child; child != NULL; child = child->next) {
-                if (!cJSON_IsString(child)) {
-                        send_message(ERROR, "Failed to parse sounds: JSON data is invalid");
-                        return false;
-                }
-
-                const char *const key = child->string;
-                bool sound_found = false;
-                enum Sound sound;
-
-                if (!strcmp(key, "Click")) {
-                        sound_found = true;
-                        sound = SOUND_CLICK;
-                } else if (!strcmp(key, "Hit")) {
-                        sound_found = true;
-                        sound = SOUND_HIT;
-                } else if (!strcmp(key, "Move")) {
-                        sound_found = true;
-                        sound = SOUND_MOVE;
-                } else if (!strcmp(key, "Placed")) {
-                        sound_found = true;
-                        sound = SOUND_PLACED;
-                } else if (!strcmp(key, "Push")) {
-                        sound_found = true;
-                        sound = SOUND_PUSH;
-                } else if (!strcmp(key, "Turn")) {
-                        sound_found = true;
-                        sound = SOUND_TURN;
-                } else if (!strcmp(key, "Undo")) {
-                        sound_found = true;
-                        sound = SOUND_UNDO;
-                } else if (!strcmp(key, "Win")) {
-                        sound_found = true;
-                        sound = SOUND_WIN;
-                }
-
-                if (!sound_found) {
-                        send_message(ERROR, "Failed to parse sounds: JSON data is invalid");
-                        return false;
-                }
-
-                if (!(sounds[sound] = Mix_LoadWAV(child->valuestring))) {
-                        send_message(ERROR, "Failed to parse sounds: Failed to load sound \"%s\": %s", key, Mix_GetError());
-                        return false;
-                }
-        }
-
-        return true;
-}
-
-static void unload_sounds(void) {
-        for (size_t sound_index = 0ULL; sound_index < SOUND_COUNT; ++sound_index) {
-                Mix_FreeChunk(sounds[sound_index]);
-                sounds[sound_index] = NULL;
-        }
 }

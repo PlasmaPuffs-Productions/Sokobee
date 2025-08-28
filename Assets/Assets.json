@@ -33,17 +33,5 @@
                         "title": "Roundabout",
                         "path": "Assets/Levels/Level7.json"
                 }
-        ],
-        "sounds": {
-                "Click": "Assets/Sounds/Click.wav",
-                "Hit": "Assets/Sounds/Hit.wav",
-                "Move": "Assets/Sounds/Move.wav",
-                "Placed": "Assets/Sounds/Placed.wav",
-                "Push": "Assets/Sounds/Push.wav",
-                "Turn": "Assets/Sounds/Turn.wav",
-                "Undo": "Assets/Sounds/Undo.wav",
-                "Win": "Assets/Sounds/Win.wav"
-        },
-        "music": {
-        }
+        ]
 }

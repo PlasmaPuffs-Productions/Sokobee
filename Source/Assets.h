@@ -36,21 +36,3 @@ struct LevelMetadata {
 size_t get_level_count(void);
 
 const struct LevelMetadata *get_level_metadata(const size_t level);
-
-// ================================================================================================
-// Sounds
-// ================================================================================================
-
-#define SOUND_COUNT 8
-enum Sound {
-        SOUND_CLICK,
-        SOUND_HIT,
-        SOUND_MOVE,
-        SOUND_PLACED,
-        SOUND_PUSH,
-        SOUND_TURN,
-        SOUND_UNDO,
-        SOUND_WIN
-};
-
-void play_sound(const enum Sound sound);
