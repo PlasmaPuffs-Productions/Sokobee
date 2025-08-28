@@ -91,7 +91,7 @@ static void toggle_music_callback(void *const data) {
 }
 
 static bool initialize_playing_scene(void) {
-        initialize_text(&level_number_label, "Level: 0", FONT_HEADER_2);
+        initialize_text(&level_number_label, "Level _: _", FONT_HEADER_2);
         set_text_color(&level_number_label, COLOR_YELLOW, 255);
 
         initialize_text(&move_count_label, "Moves: 0", FONT_HEADER_1);
@@ -174,9 +174,7 @@ static void transition_to_next_level(void *);
 static void present_level(void *const data) {
         deinitialize_level(&level);
 
-        const size_t number = (size_t)(uintptr_t)data;
-        const size_t same_level = current_level_number == number;
-        current_level_number = number;
+        current_level_number = (size_t)(uintptr_t)data;
 
         const struct LevelMetadata *const next_level_metadata = get_level_metadata(current_level_number);
         if (!next_level_metadata) {
@@ -192,10 +190,6 @@ static void present_level(void *const data) {
         }
 
         level.completion_callback = transition_to_next_level;
-
-        if (same_level) {
-                return;
-        }
 
         char level_count_string[LEVEL_TITLE_LABEL_BUFFER_SIZE];
         snprintf(level_count_string, sizeof(level_count_string), "Level %zu: %s", current_level_number, level.title);
