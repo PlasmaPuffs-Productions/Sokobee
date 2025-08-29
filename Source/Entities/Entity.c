@@ -133,7 +133,7 @@ void entity_receive_event(struct Entity *const entity, const SDL_Event *const ev
 void update_entity(struct Entity *const entity, const double delta_time) {
         entity->shake_offset = (SDL_FPoint){0.0f, 0.0f};
         if (entity->shake_power != 0.0f) {
-                // TODO: Use an animation to make a better shake?
+                // TODO: Use an animationn instead of randomizing the shake position since it causes distortion due to renderer vsync
                 const float angle = RANDOM_NUMBER(0.0f, 2.0f * (float)M_PI);
                 entity->shake_offset.x += cosf(angle) * entity->shake_power * entity->grid_metrics->tile_radius;
                 entity->shake_offset.y += sinf(angle) * entity->shake_power * entity->grid_metrics->tile_radius;
