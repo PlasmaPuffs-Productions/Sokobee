@@ -150,7 +150,7 @@ void set_text_string(struct Text *const text, const char *const string) {
         text->implementation->outdated_texture = true;
 }
 
-void set_text_format(struct Text *const text, const enum Font font) {
+void set_text_font(struct Text *const text, const enum Font font) {
         text->implementation->font = font;
         text->implementation->outdated_texture = true;
 }
