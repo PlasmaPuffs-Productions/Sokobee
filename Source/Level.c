@@ -13,6 +13,7 @@
 #include "Hexagons.h"
 #include "Entity.h"
 #include "Geometry.h"
+#include "Gesture.h"
 
 #define LEVEL_DIMENSION_LIMIT 20
 
@@ -103,7 +104,6 @@ static inline void step_history_swap_step(struct StepHistory *const source, stru
                         }
                 }
 
-                // Apply immediately (important for undo order!)
                 entity_handle_change(reversed.entity, &reversed);
 
                 if (destination->change_count >= destination->change_capacity) {
@@ -511,6 +511,16 @@ void level_receive_event(struct Level *const level, const SDL_Event *const event
 
                         step_history_swap_step(&level->implementation->undo_history, &level->implementation->step_history);
                 }
+        }
+
+        const enum Input gesture_input = handle_gesture_event(event);
+        if (gesture_input != INPUT_NONE) {
+                if (!level->implementation->has_buffered_input) {
+                        level->implementation->has_buffered_input = true;
+                        level->implementation->buffered_input = gesture_input;
+                }
+
+                return;
         }
 }
 

@@ -54,7 +54,8 @@ enum Input {
         INPUT_RIGHT,
         INPUT_SWITCH,
         INPUT_UNDO,
-        INPUT_REDO
+        INPUT_REDO,
+        INPUT_NONE
 };
 
 enum ChangeType {
