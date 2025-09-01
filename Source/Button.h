@@ -37,5 +37,5 @@ void get_button_metrics(const struct Button *const button, float *const out_x, f
 void set_button_surface_icon(struct Button *const button, const enum IconType icon_type);
 bool set_button_surface_text(struct Button *const button, char *const surface_text);
 void set_button_tooltip_text(struct Button *const button, char *const tooltip_text);
-void button_receive_event(struct Button *const button, const SDL_Event *const event);
+bool button_receive_event(struct Button *const button, const SDL_Event *const event);
 bool update_button(struct Button *const button, const double delta_time);

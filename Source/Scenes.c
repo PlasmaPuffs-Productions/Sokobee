@@ -65,10 +65,12 @@ void scene_manager_present_scene(const enum Scene next_scene) {
         }
 }
 
-void scene_manager_receive_event(const SDL_Event *const event) {
+bool scene_manager_receive_event(const SDL_Event *const event) {
         if (current_scene && current_scene->receive_event) {
-                current_scene->receive_event(event);
+                return current_scene->receive_event(event);
         }
+
+        return false;
 }
 
 void update_scene_manager(const double delta_time) {

@@ -6,7 +6,7 @@ void initialize_layers(void);
 void terminate_layers(void);
 
 typedef union SDL_Event SDL_Event;
-void layers_receive_event(const SDL_Event *const event);
+bool layers_receive_event(const SDL_Event *const event);
 void update_layers(const double delta_time);
 
 void render_background_layer(void);

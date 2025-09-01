@@ -101,9 +101,13 @@ static void update(const double delta_time) {
                         return;
                 }
 
-                layers_receive_event(&event);
-                scene_manager_receive_event(&event);
-                debug_panel_receive_event(&event);
+                if (
+                        scene_manager_receive_event(&event) ||
+                        layers_receive_event(&event)        ||
+                        debug_panel_receive_event(&event)
+                ) {
+                        continue;
+                }
         }
 
         SDL_Renderer *const renderer = get_context_renderer();

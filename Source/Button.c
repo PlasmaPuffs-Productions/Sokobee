@@ -218,14 +218,14 @@ void set_button_tooltip_text(struct Button *const button, char *const tooltip_te
         button->implementation->tooltip_text = xstrdup(tooltip_text);
 }
 
-void button_receive_event(struct Button *const button, const SDL_Event *const event) {
+bool button_receive_event(struct Button *const button, const SDL_Event *const event) {
         if (event->type == SDL_WINDOWEVENT) {
                 const Uint8 window_event = event->window.event;
                 if (window_event == SDL_WINDOWEVENT_RESIZED || window_event == SDL_WINDOWEVENT_MAXIMIZED || window_event == SDL_WINDOWEVENT_SIZE_CHANGED) {
                         resize_button(button);
                 }
 
-                return;
+                return false;
         }
 
         if (
@@ -259,13 +259,14 @@ void button_receive_event(struct Button *const button, const SDL_Event *const ev
                 get_button_metrics(button, &x, &y, &radius);
                 button->implementation->hovering = powf(x - target_x, 2.0f) + powf(y - target_y, 2.0f) <= powf(radius * 0.8f, 2.0f);
 
+                bool event_consumed = false;
                 enum ButtonState next_button_state = button->implementation->state;
                 const enum ButtonState current_button_state = next_button_state;
                 switch (event->type) {
                         case SDL_MOUSEBUTTONDOWN: case SDL_FINGERDOWN: {
                                 if (button->implementation->hovering && current_button_state != BUTTON_PRESSED) {
                                         next_button_state = BUTTON_PRESSED;
-                                        break;
+                                        event_consumed = true;
                                 }
 
                                 break;
@@ -274,12 +275,10 @@ void button_receive_event(struct Button *const button, const SDL_Event *const ev
                         case SDL_MOUSEMOTION: case SDL_FINGERMOTION: {
                                 if (button->implementation->hovering && current_button_state == BUTTON_IDLE) {
                                         next_button_state = BUTTON_HOVER;
-                                        break;
-                                }
-
-                                if (!button->implementation->hovering && current_button_state == BUTTON_HOVER) {
+                                        event_consumed = true;
+                                } else if (!button->implementation->hovering && current_button_state == BUTTON_HOVER) {
                                         next_button_state = BUTTON_IDLE;
-                                        break;
+                                        event_consumed = true;
                                 }
 
                                 break;
@@ -287,29 +286,30 @@ void button_receive_event(struct Button *const button, const SDL_Event *const ev
 
                         case SDL_MOUSEBUTTONUP: case SDL_FINGERUP: {
                                 if (!button->implementation->hovering && current_button_state == BUTTON_PRESSED) {
-                                        next_button_state = BUTTON_IDLE;
-                                        break;
-                                }
-
-                                if (button->implementation->hovering && current_button_state == BUTTON_PRESSED) {
+                                        event_consumed = true;
+                                } else if (button->implementation->hovering && current_button_state == BUTTON_PRESSED) {
                                         next_button_state = BUTTON_HOVER;
+                                        event_consumed = true;
                                         if (button->callback) {
                                                 button->callback(button->callback_data);
                                         }
 
                                         play_sound(SOUND_CLICK);
-                                        break;
                                 }
 
                                 break;
                         }
-                } 
+                }
 
                 if (next_button_state != current_button_state) {
                         button->implementation->state = next_button_state;
                         restart_animation(&button->implementation->animations, (size_t)next_button_state);
                 }
+
+                return event_consumed;
         }
+
+        return false;
 }
 
 bool update_button(struct Button *const button, const double delta_time) {

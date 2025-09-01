@@ -15,7 +15,7 @@
 #include "Icons.h"
 
 static bool initialize_main_menu_scene(void);
-static void main_menu_scene_receive_event(const SDL_Event *const event);
+static bool main_menu_scene_receive_event(const SDL_Event *const event);
 static void update_main_menu_scene(const double delta_time);
 static void terminate_main_menu_scene(void);
 
@@ -79,18 +79,24 @@ static bool initialize_main_menu_scene(void) {
         return true;
 }
 
-static void main_menu_scene_receive_event(const SDL_Event *const event) {
+static bool main_menu_scene_receive_event(const SDL_Event *const event) {
         if (event->type == SDL_WINDOWEVENT) {
                 const Uint8 window_event = event->window.event;
                 if (window_event == SDL_WINDOWEVENT_RESIZED || window_event == SDL_WINDOWEVENT_MAXIMIZED || window_event == SDL_WINDOWEVENT_SIZE_CHANGED) {
                         resize_main_menu_scene();
                 }
+
+                return false;
         }
 
         const size_t level_count = get_level_count();
         for (size_t level_index = 0ULL; level_index < level_count; ++level_index) {
-                button_receive_event(&buttons[level_index], event);
+                if (button_receive_event(&buttons[level_index], event)) {
+                        return true;
+                }
         }
+
+        return false;
 }
 
 static void update_main_menu_scene(const double delta_time) {

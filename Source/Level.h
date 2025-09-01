@@ -34,7 +34,7 @@ bool initialize_level(struct Level *const level, const struct LevelMetadata *con
 void deinitialize_level(struct Level *const level);
 
 typedef union SDL_Event SDL_Event;
-void level_receive_event(struct Level *const level, const SDL_Event *const event);
+bool level_receive_event(struct Level *const level, const SDL_Event *const event);
 void update_level(struct Level *const level, const double delta_time);
 
 struct Entity;

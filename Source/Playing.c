@@ -37,7 +37,7 @@ static struct Button music_button;
 
 static bool initialize_playing_scene(void);
 static void present_playing_scene(void);
-static void playing_scene_receive_event(const SDL_Event *const event);
+static bool playing_scene_receive_event(const SDL_Event *const event);
 static void update_playing_scene(const double delta_time);
 static void dismiss_playing_scene(void);
 static void terminate_playing_scene(void);
@@ -205,24 +205,32 @@ static void present_playing_scene(void) {
         present_level((void *)(uintptr_t)current_level_number);
 }
 
-static void playing_scene_receive_event(const SDL_Event *const event) {
+static bool playing_scene_receive_event(const SDL_Event *const event) {
         if (is_transition_triggered()) {
-                return;
+                return false;
         }
 
         if (event->type == SDL_KEYDOWN && event->key.keysym.sym == SDLK_r) {
                 trigger_transition_layer(present_level, (void *)(uintptr_t)current_level_number);
-                return;
+                return true;
         }
 
-        level_receive_event(&level, event);
+        if (
+                button_receive_event(&undo_button, event)    ||
+                button_receive_event(&redo_button, event)    ||
+                button_receive_event(&restart_button, event) ||
+                button_receive_event(&quit_button, event)    ||
+                button_receive_event(&sounds_button, event)  ||
+                button_receive_event(&music_button, event)
+        ) {
+                return true;
+        }
 
-        button_receive_event(&undo_button, event);
-        button_receive_event(&redo_button, event);
-        button_receive_event(&restart_button, event);
-        button_receive_event(&quit_button, event);
-        button_receive_event(&sounds_button, event);
-        button_receive_event(&music_button, event);
+        if (level_receive_event(&level, event)) {
+                return true;
+        }
+
+        return false;
 }
 
 static void update_playing_scene(const double delta_time) {

@@ -457,14 +457,14 @@ bool query_level_tile(
         return true;
 }
 
-void level_receive_event(struct Level *const level, const SDL_Event *const event) {
+bool level_receive_event(struct Level *const level, const SDL_Event *const event) {
         if (event->type == SDL_WINDOWEVENT) {
                 const Uint8 window_event = event->window.event;
                 if (window_event == SDL_WINDOWEVENT_RESIZED || window_event == SDL_WINDOWEVENT_MAXIMIZED || window_event == SDL_WINDOWEVENT_SIZE_CHANGED) {
                         resize_level(level);
                 }
 
-                return;
+                return false;
         }
 
         if (event->type == SDL_KEYDOWN && event->key.repeat == 0) {
@@ -472,18 +472,22 @@ void level_receive_event(struct Level *const level, const SDL_Event *const event
 
                 if (key == SDLK_LEFT || key == SDLK_a) {
                         level_turn_step(level, level->implementation->current_player, INPUT_LEFT);
+                        return true;
                 }
 
                 if (key == SDLK_RIGHT || key == SDLK_d) {
                         level_turn_step(level, level->implementation->current_player, INPUT_RIGHT);
+                        return true;
                 }
 
                 if (key == SDLK_UP || key == SDLK_w) {
                         level_move_step(level, level->implementation->current_player, INPUT_FORWARD);
+                        return true;
                 }
 
                 if (key == SDLK_DOWN || key == SDLK_s) {
                         level_move_step(level, level->implementation->current_player, INPUT_BACKWARD);
+                        return true;
                 }
 
                 if (key == SDLK_z) {
@@ -493,10 +497,11 @@ void level_receive_event(struct Level *const level, const SDL_Event *const event
                                         level->implementation->buffered_input = INPUT_UNDO;
                                 }
 
-                                return;
+                                return true;
                         }
 
                         step_history_swap_step(&level->implementation->step_history, &level->implementation->undo_history);
+                        return true;
                 }
 
                 if (key == SDLK_x || key == SDLK_y) {
@@ -506,10 +511,11 @@ void level_receive_event(struct Level *const level, const SDL_Event *const event
                                         level->implementation->buffered_input = INPUT_UNDO;
                                 }
 
-                                return;
+                                return true;
                         }
 
                         step_history_swap_step(&level->implementation->undo_history, &level->implementation->step_history);
+                        return true;
                 }
         }
 
@@ -520,8 +526,10 @@ void level_receive_event(struct Level *const level, const SDL_Event *const event
                         level->implementation->buffered_input = gesture_input;
                 }
 
-                return;
+                return true;
         }
+
+        return false;
 }
 
 void update_level(struct Level *const level, const double delta_time) {

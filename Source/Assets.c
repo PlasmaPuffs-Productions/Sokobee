@@ -141,7 +141,7 @@ static struct LevelMetadata *level_metadatas = NULL;
 static size_t level_metadata_count = 0ULL;
 
 size_t get_level_count(void) {
-        return 100; // level_metadata_count;
+        return level_metadata_count;
 }
 
 const struct LevelMetadata *get_level_metadata(const size_t level) {

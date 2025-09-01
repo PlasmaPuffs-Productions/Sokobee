@@ -51,13 +51,17 @@ void terminate_layers(void) {
         transition_geometry = NULL;
 }
 
-void layers_receive_event(const SDL_Event *const event) {
+bool layers_receive_event(const SDL_Event *const event) {
         if (event->type == SDL_WINDOWEVENT) {
                 const Uint8 window_event = event->window.event;
                 if (window_event == SDL_WINDOWEVENT_RESIZED || window_event == SDL_WINDOWEVENT_MAXIMIZED || window_event == SDL_WINDOWEVENT_SIZE_CHANGED) {
                         resize_layers();
                 }
+
+                return false;
         }
+
+        return false;
 }
 
 static inline float transition_easing(const float t) {
