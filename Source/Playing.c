@@ -6,17 +6,17 @@
 
 #include <SDL.h>
 
-#include "../Assets.h"
-#include "../Button.h"
-#include "../Audio.h"
-#include "../Persistent.h"
-#include "../Animation.h"
-#include "../Utilities.h"
-#include "../Context.h"
-#include "../Layers.h"
-#include "../Level.h"
-#include "../Icons.h"
-#include "../Text.h"
+#include "Assets.h"
+#include "Button.h"
+#include "Audio.h"
+#include "Persistent.h"
+#include "Animation.h"
+#include "Utilities.h"
+#include "Context.h"
+#include "Layers.h"
+#include "Level.h"
+#include "Icons.h"
+#include "Text.h"
 
 #define MOVE_COUNT_LABEL_BUFFER_SIZE 16ULL
 #define LEVEL_TITLE_LABEL_BUFFER_SIZE 64ULL

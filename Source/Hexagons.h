@@ -68,15 +68,18 @@ static inline enum Orientation orientation_reverse(const enum Orientation orient
         }
 }
 
-static inline void orientation_advance(const enum Orientation orientation, int8_t *const column, int8_t *const row) {
-        int8_t next_column = *column;
-        int8_t next_row = *row;
+static inline bool orientation_advance_index(const enum Orientation orientation, const uint8_t columns, const uint8_t rows, uint16_t *const out_index) {
+        int8_t column = (int8_t)(*out_index % (uint16_t)columns);
+        int8_t row    = (int8_t)(*out_index / (uint16_t)columns);
+
+        int8_t next_column = column;
+        int8_t next_row    = row;
 
         switch (orientation) {
                 case UPPER_RIGHT: {
                         ++next_column;
 
-                        if (!(*column & 1)) {
+                        if (!(column & 1)) {
                                 --next_row;
                         }
 
@@ -91,7 +94,7 @@ static inline void orientation_advance(const enum Orientation orientation, int8_
                 case UPPER_LEFT: {
                         --next_column;
 
-                        if (!(*column & 1)) {
+                        if (!(column & 1)) {
                                 --next_row;
                         }
 
@@ -101,7 +104,7 @@ static inline void orientation_advance(const enum Orientation orientation, int8_
                 case LOWER_LEFT: {
                         --next_column;
 
-                        if (*column & 1) {
+                        if (column & 1) {
                                 ++next_row;
                         }
 
@@ -116,7 +119,7 @@ static inline void orientation_advance(const enum Orientation orientation, int8_
                 case LOWER_RIGHT: {
                         ++next_column;
 
-                        if (*column & 1) {
+                        if (column & 1) {
                                 ++next_row;
                         }
 
@@ -124,8 +127,12 @@ static inline void orientation_advance(const enum Orientation orientation, int8_
                 }
         }
 
-        *column = next_column;
-        *row = next_row;
+        if (next_column < 0 || next_row < 0 || next_column >= columns || next_row >= rows) {
+                return false;
+        }
+
+        *out_index = (uint16_t)(next_row * (int8_t)columns + next_column);
+        return true;
 }
 
 // ================================================================================================

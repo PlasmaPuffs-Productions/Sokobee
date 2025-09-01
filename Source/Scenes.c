@@ -4,7 +4,7 @@
 
 #include <SDL.h>
 
-#include "../Utilities.h"
+#include "Utilities.h"
 
 size_t current_level_number = 0ULL;
 

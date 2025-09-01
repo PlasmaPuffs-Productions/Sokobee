@@ -15,7 +15,7 @@
 #include "Context.h"
 #include "Geometry.h"
 #include "Persistent.h"
-#include "Scenes/Scenes.h"
+#include "Scenes.h"
 
 #define WINDOW_MINIMIZED_THROTTLE 100ULL
 
