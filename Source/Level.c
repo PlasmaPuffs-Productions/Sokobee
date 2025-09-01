@@ -181,11 +181,17 @@ struct LevelImplementation {
         struct Geometry *grid_geometry;
         struct StepHistory step_history;
         struct StepHistory undo_history;
-        struct Step *buffered_step;
+        enum Input buffered_input;
+        bool has_buffered_input;
 };
 
 static inline void level_move_step(struct Level *const level, struct Entity *const entity, const enum Input input) {
         if (!entity_can_change(entity)) {
+                if (!level->implementation->has_buffered_input) {
+                        level->implementation->has_buffered_input = true;
+                        level->implementation->buffered_input = input;
+                }
+
                 return;
         }
 
@@ -274,6 +280,11 @@ static inline void level_move_step(struct Level *const level, struct Entity *con
 
 static inline void level_turn_step(struct Level *const level, struct Entity *const entity, const enum Input input) {
         if (!entity_can_change(entity)) {
+                if (!level->implementation->has_buffered_input) {
+                        level->implementation->has_buffered_input = true;
+                        level->implementation->buffered_input = input;
+                }
+
                 return;
         }
 
@@ -327,6 +338,7 @@ bool initialize_level(struct Level *const level, const struct LevelMetadata *con
         level->implementation = (struct LevelImplementation *)xmalloc(sizeof(struct LevelImplementation));
         level->implementation->grid_geometry = create_geometry();
         level->implementation->current_player = NULL;
+        level->implementation->has_buffered_input = false;
 
         initialize_step_history(&level->implementation->step_history);
         initialize_step_history(&level->implementation->undo_history);
@@ -476,6 +488,11 @@ void level_receive_event(struct Level *const level, const SDL_Event *const event
 
                 if (key == SDLK_z) {
                         if (!entity_can_change(level->implementation->current_player)) {
+                                if (!level->implementation->has_buffered_input) {
+                                        level->implementation->has_buffered_input = true;
+                                        level->implementation->buffered_input = INPUT_UNDO;
+                                }
+
                                 return;
                         }
 
@@ -484,6 +501,11 @@ void level_receive_event(struct Level *const level, const SDL_Event *const event
 
                 if (key == SDLK_x || key == SDLK_y) {
                         if (!entity_can_change(level->implementation->current_player)) {
+                                if (!level->implementation->has_buffered_input) {
+                                        level->implementation->has_buffered_input = true;
+                                        level->implementation->buffered_input = INPUT_UNDO;
+                                }
+
                                 return;
                         }
 
@@ -493,19 +515,48 @@ void level_receive_event(struct Level *const level, const SDL_Event *const event
 }
 
 void update_level(struct Level *const level, const double delta_time) {
-        struct LevelImplementation *const implementation = level->implementation;
-        render_geometry(implementation->grid_geometry);
+        if (level->implementation->has_buffered_input && entity_can_change(level->implementation->current_player)) {
+                level->implementation->has_buffered_input = false;
 
-        for (size_t entity_index = 0ULL; entity_index < implementation->entity_count; ++entity_index) {
-                struct Entity *const entity = implementation->entities[entity_index];
+                switch (level->implementation->buffered_input) {
+                        case INPUT_BACKWARD: case INPUT_FORWARD: {
+                                level_move_step(level, level->implementation->current_player, level->implementation->buffered_input);
+                                break;
+                        }
+
+                        case INPUT_LEFT: case INPUT_RIGHT: {
+                                level_turn_step(level, level->implementation->current_player, level->implementation->buffered_input);
+                                break;
+                        }
+
+                        case INPUT_UNDO: {
+                                step_history_swap_step(&level->implementation->step_history, &level->implementation->undo_history);
+                                break;
+                        }
+
+                        case INPUT_REDO: {
+                                step_history_swap_step(&level->implementation->undo_history, &level->implementation->step_history);
+                                break;
+                        }
+
+                        default: {
+                                break;
+                        }
+                }
+        }
+
+        render_geometry(level->implementation->grid_geometry);
+
+        for (size_t entity_index = 0ULL; entity_index < level->implementation->entity_count; ++entity_index) {
+                struct Entity *const entity = level->implementation->entities[entity_index];
                 if (get_entity_type(entity) != ENTITY_PLAYER) {
                         update_entity(entity, delta_time);
                 }
         }
 
         // Add another pass to update players last (I forgot why though)
-        for (size_t entity_index = 0ULL; entity_index < implementation->entity_count; ++entity_index) {
-                struct Entity *const entity = implementation->entities[entity_index];
+        for (size_t entity_index = 0ULL; entity_index < level->implementation->entity_count; ++entity_index) {
+                struct Entity *const entity = level->implementation->entities[entity_index];
                 if (get_entity_type(entity) == ENTITY_PLAYER) {
                         update_entity(entity, delta_time);
                 }
