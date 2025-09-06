@@ -65,7 +65,7 @@ static bool initialize_main_menu_scene(void) {
 
                 snprintf(string, sizeof(string), "%zu", level_number);
                 if (!set_button_surface_text(button, string)) {
-                        send_message(ERROR, "Failed to initialize main menu screen: Failed to set button (index %zu) surface text", level_index);
+                        send_message(MESSAGE_ERROR, "Failed to initialize main menu screen: Failed to set button (index %zu) surface text", level_index);
                         terminate_main_menu_scene();
                         return false;
                 }

@@ -6,73 +6,73 @@
 
 #ifndef NDEBUG
 
-struct AllocationInformation {
+struct AllocationMESSAGE_INFORMATION {
         void *pointer;
         size_t size;
         const char *file;
         size_t line;
-        struct AllocationInformation *next;
+        struct AllocationMESSAGE_INFORMATION *next;
 };
 
-static struct AllocationInformation *allocation_informations = NULL;
+static struct AllocationMESSAGE_INFORMATION *allocation_MESSAGE_INFORMATIONs = NULL;
 static size_t active_allocations = 0ULL;
 static size_t active_bytes = 0ULL;
 static size_t peak_bytes = 0ULL;
 
 void flush_memory_leaks(void) {
-        if (allocation_informations == NULL) {
+        if (allocation_MESSAGE_INFORMATIONs == NULL) {
                 fprintf(stdout, "flush_memory_leaks(): No leaked memory\n");
                 fflush(stdout);
                 return;
         }
 
         fprintf(stderr, "flush_memory_leaks(): %zu active allocations (totalling %zu bytes) leaked\n", active_allocations, active_bytes);
-        for (struct AllocationInformation *current_allocation_information = allocation_informations; current_allocation_information != NULL; current_allocation_information = current_allocation_information->next) {
-                fprintf(stderr, "flush_memory_leaks(): %p (%zu bytes) allocated at %s:%zu\n", current_allocation_information->pointer, current_allocation_information->size, current_allocation_information->file, current_allocation_information->line);
+        for (struct AllocationMESSAGE_INFORMATION *current_allocation_MESSAGE_INFORMATION = allocation_MESSAGE_INFORMATIONs; current_allocation_MESSAGE_INFORMATION != NULL; current_allocation_MESSAGE_INFORMATION = current_allocation_MESSAGE_INFORMATION->next) {
+                fprintf(stderr, "flush_memory_leaks(): %p (%zu bytes) allocated at %s:%zu\n", current_allocation_MESSAGE_INFORMATION->pointer, current_allocation_MESSAGE_INFORMATION->size, current_allocation_MESSAGE_INFORMATION->file, current_allocation_MESSAGE_INFORMATION->line);
         }
 
         fflush(stderr);
 }
 
 static void track_allocation(void *const pointer, const size_t size, const char *const file, const size_t line) {
-        struct AllocationInformation *const allocation_information = malloc(sizeof(struct AllocationInformation));
-        if (allocation_information == NULL) {
+        struct AllocationMESSAGE_INFORMATION *const allocation_MESSAGE_INFORMATION = malloc(sizeof(struct AllocationMESSAGE_INFORMATION));
+        if (allocation_MESSAGE_INFORMATION == NULL) {
                 exit(EXIT_FAILURE);
         }
 
-        allocation_information->pointer = pointer;
-        allocation_information->size = size;
-        allocation_information->file = file;
-        allocation_information->line = line;
-        allocation_information->next = allocation_informations;
-        allocation_informations = allocation_information;
+        allocation_MESSAGE_INFORMATION->pointer = pointer;
+        allocation_MESSAGE_INFORMATION->size = size;
+        allocation_MESSAGE_INFORMATION->file = file;
+        allocation_MESSAGE_INFORMATION->line = line;
+        allocation_MESSAGE_INFORMATION->next = allocation_MESSAGE_INFORMATIONs;
+        allocation_MESSAGE_INFORMATIONs = allocation_MESSAGE_INFORMATION;
 
         ++active_allocations;
         active_bytes += size;
 
         if (active_bytes > peak_bytes) {
                 peak_bytes = active_bytes;
-                // fprintf(stdout, "WARNING: Peak memory usage (of %zu bytes) reached with %p (%zu bytes) from %s:%zu\n", peak_bytes, pointer, size, file, line);
+                // fprintf(stdout, "MESSAGE_WARNING: Peak memory usage (of %zu bytes) reached with %p (%zu bytes) from %s:%zu\n", peak_bytes, pointer, size, file, line);
                 // fflush(stdout);
         }
 }
 
 static void remove_allocation(void *const pointer, const char *const file, const size_t line) {
-        struct AllocationInformation **current_allocation_information = &allocation_informations;
+        struct AllocationMESSAGE_INFORMATION **current_allocation_MESSAGE_INFORMATION = &allocation_MESSAGE_INFORMATIONs;
 
-        while (*current_allocation_information != NULL) {
-                if ((*current_allocation_information)->pointer == pointer) {
-                        struct AllocationInformation *removed_allocation_information = *current_allocation_information;
+        while (*current_allocation_MESSAGE_INFORMATION != NULL) {
+                if ((*current_allocation_MESSAGE_INFORMATION)->pointer == pointer) {
+                        struct AllocationMESSAGE_INFORMATION *removed_allocation_MESSAGE_INFORMATION = *current_allocation_MESSAGE_INFORMATION;
 
-                        active_bytes -= removed_allocation_information->size;
+                        active_bytes -= removed_allocation_MESSAGE_INFORMATION->size;
                         --active_allocations;
 
-                        *current_allocation_information = removed_allocation_information->next;
-                        free(removed_allocation_information);
+                        *current_allocation_MESSAGE_INFORMATION = removed_allocation_MESSAGE_INFORMATION->next;
+                        free(removed_allocation_MESSAGE_INFORMATION);
                         return;
                 }
 
-                current_allocation_information = &(*current_allocation_information)->next;
+                current_allocation_MESSAGE_INFORMATION = &(*current_allocation_MESSAGE_INFORMATION)->next;
         }
 
         fprintf(stderr, "xfree(%p): Unrecognized pointer at %s:%zu\n", pointer, file, line);

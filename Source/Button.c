@@ -49,7 +49,7 @@ struct Button *create_button(const bool grid_slot_positioning) {
 
 void destroy_button(struct Button *const button) {
         if (!button) {
-                send_message(WARNING, "Button given to destroy is NULL");
+                send_message(MESSAGE_WARNING, "Button given to destroy is NULL");
                 return;
         }
 
@@ -117,7 +117,7 @@ void initialize_button(struct Button *const button, const bool grid_slot_positio
 
 void deinitialize_button(struct Button *const button) {
         if (!button) {
-                send_message(ERROR, "Button given to deinitialize is NULL");
+                send_message(MESSAGE_ERROR, "Button given to deinitialize is NULL");
                 return;
         }
 

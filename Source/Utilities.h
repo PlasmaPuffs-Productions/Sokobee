@@ -90,7 +90,7 @@
 static inline char *load_text_file(const char *const path) {
         FILE *const file = fopen(path, "rb");
         if (file == NULL) {
-                send_message(ERROR, "Failed to load text file \"%s\": %s", path, strerror(errno));
+                send_message(MESSAGE_ERROR, "Failed to load text file \"%s\": %s", path, strMESSAGE_ERROR(errno));
                 return NULL;
         }
 
@@ -100,7 +100,7 @@ static inline char *load_text_file(const char *const path) {
 
         char *const buffer = (char *)xmalloc(size + 1ULL);
         if (fread(buffer, 1ULL, size, file) != size) {
-                send_message(ERROR, "Failed to read text file \"%s\": %s", path, strerror(errno));
+                send_message(MESSAGE_ERROR, "Failed to read text file \"%s\": %s", path, strMESSAGE_ERROR(errno));
                 xfree(buffer);
                 fclose(file);
                 return NULL;

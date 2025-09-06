@@ -36,7 +36,7 @@ struct Text *create_text(const char *const string, const enum Font font) {
 
 void destroy_text(struct Text *const text) {
         if (!text) {
-                send_message(WARNING, "Text given to destroy is NULL");
+                send_message(MESSAGE_WARNING, "Text given to destroy is NULL");
                 return;
         }
 
@@ -74,7 +74,7 @@ void initialize_text(struct Text *const text, const char *const string, const en
 
 void deinitialize_text(struct Text *const text) {
         if (!text) {
-                send_message(WARNING, "Text given to deinitialize is NULL");
+                send_message(MESSAGE_WARNING, "Text given to deinitialize is NULL");
                 return;
         }
 
@@ -232,7 +232,7 @@ static void refresh_text(struct Text *const text) {
                         }
 
                         if (space_count >= sizeof(word_buffer)) {
-                                send_message(ERROR, "Failed to refresh space: Too many consecutive spaces");
+                                send_message(MESSAGE_ERROR, "Failed to refresh space: Too many consecutive spaces");
                                 invalidate_text(text);
                                 return;
                         }
@@ -257,7 +257,7 @@ static void refresh_text(struct Text *const text) {
 
                 const size_t word_length = position - word_start;
                 if (word_length >= sizeof(word_buffer)) {
-                        send_message(ERROR, "Failed to refresh text: Text \"%s\" has word that exceeds the maximum word length of %zu", text->implementation->string, MAXIMUM_WORD_SIZE);
+                        send_message(MESSAGE_ERROR, "Failed to refresh text: Text \"%s\" has word that exceeds the maximum word length of %zu", text->implementation->string, MAXIMUM_WORD_SIZE);
                         for (size_t line_index = 0ULL; line_index < line_count; ++line_index) {
                                 xfree(lines[line_index]);
                         }
@@ -319,7 +319,7 @@ static void refresh_text(struct Text *const text) {
         }
 
         if (!line_count) {
-                send_message(ERROR, "Failed to refresh text: Text contains no visible content");
+                send_message(MESSAGE_ERROR, "Failed to refresh text: Text contains no visible content");
                 invalidate_text(text);
                 return;
         }
@@ -327,7 +327,7 @@ static void refresh_text(struct Text *const text) {
         const size_t total_height = line_count * line_height + (line_count - 1ULL) * line_gap;
         SDL_Surface *const surface = SDL_CreateRGBSurfaceWithFormat(0, total_width, total_height, 32, SDL_PIXELFORMAT_RGBA8888);
         if (!surface) {
-                send_message(ERROR, "Failed to refresh text: Failed to create surface: %s", SDL_GetError());
+                send_message(MESSAGE_ERROR, "Failed to refresh text: Failed to create surface: %s", SDL_GetMESSAGE_ERROR());
                 for (size_t line_index = 0ULL; line_index < line_count; ++line_index) {
                         xfree(lines[line_index]);
                 }
@@ -337,7 +337,7 @@ static void refresh_text(struct Text *const text) {
         }
 
         if (SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_BLEND) != 0) {
-                send_message(ERROR, "Failed to refresh text: Failed to set surface blend mode: %s", SDL_GetError());
+                send_message(MESSAGE_ERROR, "Failed to refresh text: Failed to set surface blend mode: %s", SDL_GetMESSAGE_ERROR());
                 invalidate_text(text);
                 return;
         }
@@ -352,7 +352,7 @@ static void refresh_text(struct Text *const text) {
         for (size_t line_index = 0ULL; line_index < line_count; ++line_index) {
                 SDL_Surface *const line_surface = TTF_RenderUTF8_Blended(font, lines[line_index], baked_color);
                 if (!line_surface) {
-                        send_message(ERROR, "Failed to refresh text: Failed to render line %zu: %s", line_index, TTF_GetError());
+                        send_message(MESSAGE_ERROR, "Failed to refresh text: Failed to render line %zu: %s", line_index, TTF_GetMESSAGE_ERROR());
                         for (size_t line_index = 0ULL; line_index < line_count; ++line_index) {
                                 xfree(lines[line_index]);
                         }
@@ -397,7 +397,7 @@ static void refresh_text(struct Text *const text) {
 
         SDL_DestroyTexture(text->implementation->texture);
         if (!(text->implementation->texture = SDL_CreateTexture(get_context_renderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, surface->w, surface->h))) {
-                send_message(ERROR, "Failed to refresh text: Failed to create texture: %s", SDL_GetError());
+                send_message(MESSAGE_ERROR, "Failed to refresh text: Failed to create texture: %s", SDL_GetMESSAGE_ERROR());
                 SDL_FreeSurface(surface);
 
                 text->implementation->texture_width = MISSING_TEXTURE_WIDTH;
@@ -406,7 +406,7 @@ static void refresh_text(struct Text *const text) {
         }
 
         if (SDL_SetTextureBlendMode(text->implementation->texture, SDL_BLENDMODE_BLEND) != 0) {
-                send_message(ERROR, "Failed to refresh text: Failed to set texture blend mode: %s", SDL_GetError());
+                send_message(MESSAGE_ERROR, "Failed to refresh text: Failed to set texture blend mode: %s", SDL_GetMESSAGE_ERROR());
                 SDL_FreeSurface(surface);
 
                 invalidate_text(text);
@@ -416,7 +416,7 @@ static void refresh_text(struct Text *const text) {
         void *pixels;
         int pitch;
         if (SDL_LockTexture(text->implementation->texture, NULL, &pixels, &pitch) != 0) {
-                send_message(ERROR, "Failed to refresh text: Failed to lock texture: %s", SDL_GetError());
+                send_message(MESSAGE_ERROR, "Failed to refresh text: Failed to lock texture: %s", SDL_GetMESSAGE_ERROR());
                 SDL_FreeSurface(surface);
 
                 invalidate_text(text);

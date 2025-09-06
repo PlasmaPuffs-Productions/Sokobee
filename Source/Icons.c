@@ -55,7 +55,7 @@ struct Icon *create_icon(const enum IconType type) {
 
 void destroy_icon(struct Icon *const icon) {
         if (!icon) {
-                send_message(WARNING, "Icon given to destroy is NULL");
+                send_message(MESSAGE_WARNING, "Icon given to destroy is NULL");
                 return;
         }
 
@@ -240,52 +240,6 @@ static void write_exit_icon_geometry(struct Icon *const icon) {
         transform_icon_point(icon, &x1, &y1);
         transform_icon_point(icon, &x2, &y2);
         transform_icon_point(icon, &x3, &y3);
-
-        const float width        = trx - tlx;
-        const float height       = bly - tly;
-        const float lower_height = toy - try;
-
-        const SDL_FRect top_line = (SDL_FRect){
-                .x = tlx + width / 2.0f,
-                .y = tly,
-                .w = width,
-                .h = line_width
-        };
-
-        const SDL_FRect bottom_line = (SDL_FRect){
-                .x = tlx + width / 2.0f,
-                .y = bly,
-                .w = width,
-                .h = line_width
-        };
-
-        const SDL_FRect left_line = (SDL_FRect){
-                .x = tlx,
-                .y = tly + height / 2.0f,
-                .w = line_width,
-                .h = height
-        };
-
-        const SDL_FRect top_right_line = (SDL_FRect){
-                .x = trx,
-                .y = try + lower_height / 2.0f,
-                .w = line_width,
-                .h = lower_height
-        };
-
-        const SDL_FRect bottom_right_line = (SDL_FRect){
-                .x = brx,
-                .y = bry - lower_height / 2.0f,
-                .w = line_width,
-                .h = lower_height
-        };
-
-        const SDL_FRect arrow_line = (SDL_FRect){
-                .x = trx,
-                .y = cy,
-                .w = width,
-                .h = line_width
-        };
 
         clear_geometry(icon->geometry);
 

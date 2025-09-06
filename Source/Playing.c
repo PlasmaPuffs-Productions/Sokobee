@@ -178,13 +178,13 @@ static void present_level(void *const data) {
 
         const struct LevelMetadata *const next_level_metadata = get_level_metadata(current_level_number);
         if (!next_level_metadata) {
-                send_message(INFORMATION, "All levels complete: Returning to main menu");
+                send_message(MESSAGE_INFORMATION, "All levels complete: Returning to main menu");
                 scene_manager_present_scene(SCENE_MAIN_MENU);
                 return;
         }
 
         if (!initialize_level(&level, next_level_metadata)) {
-                send_message(ERROR, "Failed to load next level: Returning to main menu");
+                send_message(MESSAGE_ERROR, "Failed to load next level: Returning to main menu");
                 scene_manager_present_scene(SCENE_MAIN_MENU);
                 return;
         }

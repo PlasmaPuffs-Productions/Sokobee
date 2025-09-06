@@ -23,7 +23,7 @@ static void initialize(void);
 static void update(const double delta_time);
 static void terminate(const int exit_code);
 
-int main(void) {
+int main(const int argument_count, char *const argument_values[]) {
         srand((unsigned int)time(NULL));
         initialize();
 
@@ -41,40 +41,40 @@ int main(void) {
 }
 
 static void initialize(void) {
-        send_message(INFORMATION, "Initializing program...");
+        send_message(MESSAGE_INFORMATION, "Initializing program...");
 
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0 || TTF_Init() < 0) {
-                send_message(FATAL, "Failed to initialize program: Failed to initialize SDL: %s", SDL_GetError());
+                send_message(MESSAGE_FATAL, "Failed to initialize program: Failed to initialize SDL: %s", SDL_GetMESSAGE_ERROR());
                 terminate(EXIT_FAILURE);
         }
 
         if (!load_persistent_data()) {
-                send_message(FATAL, "Failed to initialize program: Failed to load persistent data");
+                send_message(MESSAGE_FATAL, "Failed to initialize program: Failed to load persistent data");
                 terminate(EXIT_FAILURE);
         }
 
         if (!initialize_audio()) {
-                send_message(FATAL, "Failed to initialize program: Failed to initialize audio");
+                send_message(MESSAGE_FATAL, "Failed to initialize program: Failed to initialize audio");
                 terminate(EXIT_FAILURE);
         }
 
         if (!initialize_context()) {
-                send_message(FATAL, "Failed to initialize program: Failed to initialize context");
+                send_message(MESSAGE_FATAL, "Failed to initialize program: Failed to initialize context");
                 terminate(EXIT_FAILURE);
         }
 
         if (!load_assets("Assets/Assets.json")) {
-                send_message(FATAL, "Failed to initialize program: Failed to load assets");
+                send_message(MESSAGE_FATAL, "Failed to initialize program: Failed to load assets");
                 terminate(EXIT_FAILURE);
         }
 
         if (!initialize_cursor()) {
-                send_message(FATAL, "Failed to initialize program: Failed to initialize cursor");
+                send_message(MESSAGE_FATAL, "Failed to initialize program: Failed to initialize cursor");
                 terminate(EXIT_FAILURE);
         }
 
         if (!initialize_scene_manager()) {
-                send_message(FATAL, "Failed to initialize program: Failed to intialize scene manager");
+                send_message(MESSAGE_FATAL, "Failed to initialize program: Failed to intialize scene manager");
                 terminate(EXIT_FAILURE);
         }
 
@@ -83,7 +83,7 @@ static void initialize(void) {
 
         play_music(MUSIC_BGM);
 
-        send_message(INFORMATION, "Program initialized successfully");
+        send_message(MESSAGE_INFORMATION, "Program initialized successfully");
 }
 
 static void update(const double delta_time) {
@@ -131,7 +131,7 @@ static void update(const double delta_time) {
 }
 
 static void terminate(const int exit_code) {
-        send_message(INFORMATION, "Terminating program...");
+        send_message(MESSAGE_INFORMATION, "Terminating program...");
 
         terminate_scene_manager();
         terminate_debug_panel();
@@ -145,7 +145,7 @@ static void terminate(const int exit_code) {
         TTF_Quit();
         SDL_Quit();
 
-        send_message(INFORMATION, "Exiting program with code \"EXIT_%s\"...", exit_code == EXIT_SUCCESS ? "SUCCESS" : "FAILURE");
+        send_message(MESSAGE_INFORMATION, "Exiting program with code \"EXIT_%s\"...", exit_code == EXIT_SUCCESS ? "SUCCESS" : "FAILURE");
         flush_memory_leaks();
         exit(exit_code);
 }

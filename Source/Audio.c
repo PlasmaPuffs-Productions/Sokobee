@@ -30,7 +30,7 @@ static const char *music_paths[MUSIC_COUNT] = {
 
 bool initialize_audio(void) {
         if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-                send_message(ERROR, "Failed to initialize audio: %s", Mix_GetError());
+                send_message(MESSAGE_ERROR, "Failed to initialize audio: %s", Mix_GetMESSAGE_ERROR());
                 return false;
         }
 
@@ -47,7 +47,7 @@ bool initialize_audio(void) {
 
         for (size_t index = 0ULL; index < MUSIC_COUNT; index++) {
                 if (!(music_tracks[index] = Mix_LoadMUS(music_paths[index]))) {
-                        send_message(ERROR, "Failed to initialize audio: Failed to load music %zu from path \"%s\": %s", index, music_paths[index], Mix_GetError());
+                        send_message(MESSAGE_ERROR, "Failed to initialize audio: Failed to load music %zu from path \"%s\": %s", index, music_paths[index], Mix_GetMESSAGE_ERROR());
                         terminate_audio();
                         return false;
                 }
@@ -55,7 +55,7 @@ bool initialize_audio(void) {
 
         for (size_t index = 0ULL; index < SOUND_COUNT; index++) {
                 if (!(sound_chunks[index] = Mix_LoadWAV(sound_paths[index]))) {
-                        send_message(ERROR, "Failed to initialize audio: Failed to load sound %zu from path \"%s\": %s", index, sound_paths[index], Mix_GetError());
+                        send_message(MESSAGE_ERROR, "Failed to initialize audio: Failed to load sound %zu from path \"%s\": %s", index, sound_paths[index], Mix_GetMESSAGE_ERROR());
                         terminate_audio();
                         return false;
                 }
@@ -84,13 +84,13 @@ void terminate_audio(void) {
 
 void play_sound(const enum Sound sound) {
         if (!sound_chunks[sound]) {
-                send_message(ERROR, "Failed to play sound %d: Sound is unavailable", (int)sound);
+                send_message(MESSAGE_ERROR, "Failed to play sound %d: Sound is unavailable", (int)sound);
                 return;
         }
 
         const int free_channel = Mix_GroupAvailable(SOUND_GROUP);
         if (Mix_PlayChannel(free_channel < 0 ? Mix_GroupOldest(SOUND_GROUP) : free_channel, sound_chunks[sound], 0) < 0) {
-                send_message(ERROR, "Failed to play sound %d: %s", (int)sound, Mix_GetError());
+                send_message(MESSAGE_ERROR, "Failed to play sound %d: %s", (int)sound, Mix_GetMESSAGE_ERROR());
         }
 }
 
@@ -102,12 +102,12 @@ void toggle_sound(const bool enabled) {
 
 void play_music(const enum Music music) {
         if (!music_tracks[music]) {
-                send_message(ERROR, "Failed to play music %d: Music is unavailable", (int)music);
+                send_message(MESSAGE_ERROR, "Failed to play music %d: Music is unavailable", (int)music);
                 return;
         }
 
         if (Mix_PlayMusic(music_tracks[music], -1) < 0) {
-                send_message(ERROR, "Failed to play music %d: %s", (int)music, Mix_GetError());
+                send_message(MESSAGE_ERROR, "Failed to play music %d: %s", (int)music, Mix_GetMESSAGE_ERROR());
         }
 }
 

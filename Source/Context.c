@@ -32,7 +32,7 @@ SDL_Texture *get_mising_texture(void) {
 
 bool initialize_context(void) {
         if (!(window = SDL_CreateWindow("Sokobee", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI))) {
-                send_message(ERROR, "Failed to initialize context: Failed to create window: %s", SDL_GetError());
+                send_message(MESSAGE_ERROR, "Failed to initialize context: Failed to create window: %s", SDL_GetMESSAGE_ERROR());
                 terminate_context();
                 return false;
         }
@@ -40,7 +40,7 @@ bool initialize_context(void) {
         SDL_SetWindowMinimumSize(window, MINIMUM_WINDOW_WIDTH, MINIMUM_WINDOW_HEIGHT);
 
         if (!(renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED))) {
-                send_message(ERROR, "Failed to initialize context: Failed to create renderer: %s", SDL_GetError());
+                send_message(MESSAGE_ERROR, "Failed to initialize context: Failed to create renderer: %s", SDL_GetMESSAGE_ERROR());
                 terminate_context();
                 return false;
         }
@@ -48,13 +48,13 @@ bool initialize_context(void) {
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
         if (!(missing_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, MISSING_TEXTURE_WIDTH, MISSING_TEXTURE_HEIGHT))) {
-                send_message(ERROR, "Failed to initialize context: Failed to create missing texture: %s", SDL_GetError());
+                send_message(MESSAGE_ERROR, "Failed to initialize context: Failed to create missing texture: %s", SDL_GetMESSAGE_ERROR());
                 terminate_context();
                 return false;
         }
 
         if (!apply_missing_texture(missing_texture)) {
-                send_message(ERROR, "Failed to initialize context: Failed to apply missing texture pattern to missing texture");
+                send_message(MESSAGE_ERROR, "Failed to initialize context: Failed to apply missing texture pattern to missing texture");
                 terminate_context();
                 return false;
         }
@@ -89,7 +89,7 @@ bool apply_missing_texture(SDL_Texture *const texture) {
         void *pixels;
         int pitch;
         if (SDL_LockTexture(texture, NULL, &pixels, &pitch) != 0) {
-                SDL_Log("Failed to apply missing texture: Failed to lock texture: %s", SDL_GetError());
+                SDL_Log("Failed to apply missing texture: Failed to lock texture: %s", SDL_GetMESSAGE_ERROR());
                 return false;
         }
 

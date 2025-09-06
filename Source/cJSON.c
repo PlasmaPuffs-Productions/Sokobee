@@ -23,7 +23,7 @@
 /* cJSON */
 /* JSON parser in C. */
 
-/* disable warnings about old C89 functions in MSVC */
+/* disable MESSAGE_WARNINGs about old C89 functions in MSVC */
 #if !defined(_CRT_SECURE_NO_DEPRECATE) && defined(_MSC_VER)
 #define _CRT_SECURE_NO_DEPRECATE
 #endif
@@ -32,9 +32,9 @@
 #pragma GCC visibility push(default)
 #endif
 #if defined(_MSC_VER)
-#pragma warning (push)
-/* disable warning about single line comments in system headers */
-#pragma warning (disable : 4001)
+#pragma MESSAGE_WARNING (push)
+/* disable MESSAGE_WARNING about single line comments in system headers */
+#pragma MESSAGE_WARNING (disable : 4001)
 #endif
 
 #include <string.h>
@@ -52,7 +52,7 @@
 #endif
 
 #if defined(_MSC_VER)
-#pragma warning (pop)
+#pragma MESSAGE_WARNING (pop)
 #endif
 #ifdef __GNUC__
 #pragma GCC visibility pop
@@ -86,12 +86,12 @@
 typedef struct {
     const unsigned char *json;
     size_t position;
-} error;
-static error global_error = { NULL, 0 };
+} MESSAGE_ERROR;
+static MESSAGE_ERROR global_MESSAGE_ERROR = { NULL, 0 };
 
-CJSON_PUBLIC(const char *) cJSON_GetErrorPtr(void)
+CJSON_PUBLIC(const char *) cJSON_GetMESSAGE_ERRORPtr(void)
 {
-    return (const char*) (global_error.json + global_error.position);
+    return (const char*) (global_MESSAGE_ERROR.json + global_MESSAGE_ERROR.position);
 }
 
 CJSON_PUBLIC(char *) cJSON_GetStringValue(const cJSON * const item) 
@@ -116,7 +116,7 @@ CJSON_PUBLIC(double) cJSON_GetNumberValue(const cJSON * const item)
 
 /* This is a safeguard to prevent copy-pasters from using incompatible C and header files */
 #if (CJSON_VERSION_MAJOR != 1) || (CJSON_VERSION_MINOR != 7) || (CJSON_VERSION_PATCH != 14)
-    #error cJSON.h and cJSON.c have different versions. Make sure that both have the same.
+    #MESSAGE_ERROR cJSON.h and cJSON.c have different versions. Make sure that both have the same.
 #endif
 
 CJSON_PUBLIC(const char*) cJSON_Version(void)
@@ -159,7 +159,7 @@ typedef struct internal_hooks
 } internal_hooks;
 
 #if defined(_MSC_VER)
-/* work around MSVC error C2322: '...' address of dllimport '...' is not static */
+/* work around MSVC MESSAGE_ERROR C2322: '...' address of dllimport '...' is not static */
 static void * CJSON_CDECL internal_malloc(size_t size)
 {
     return _cJSON_malloc(size);
@@ -351,7 +351,7 @@ loop_end:
     number = strtod((const char*)number_c_string, (char**)&after_end);
     if (number_c_string == after_end)
     {
-        return false; /* parse_error */
+        return false; /* parse_MESSAGE_ERROR */
     }
 
     item->valuedouble = number;
@@ -1094,9 +1094,9 @@ CJSON_PUBLIC(cJSON *) cJSON_ParseWithLengthOpts(const char *value, size_t buffer
     parse_buffer buffer = { 0, 0, 0, 0, { 0, 0, 0 } };
     cJSON *item = NULL;
 
-    /* reset error position */
-    global_error.json = NULL;
-    global_error.position = 0;
+    /* reset MESSAGE_ERROR position */
+    global_MESSAGE_ERROR.json = NULL;
+    global_MESSAGE_ERROR.position = 0;
 
     if (value == NULL || 0 == buffer_length)
     {
@@ -1144,25 +1144,25 @@ fail:
 
     if (value != NULL)
     {
-        error local_error;
-        local_error.json = (const unsigned char*)value;
-        local_error.position = 0;
+        MESSAGE_ERROR local_MESSAGE_ERROR;
+        local_MESSAGE_ERROR.json = (const unsigned char*)value;
+        local_MESSAGE_ERROR.position = 0;
 
         if (buffer.offset < buffer.length)
         {
-            local_error.position = buffer.offset;
+            local_MESSAGE_ERROR.position = buffer.offset;
         }
         else if (buffer.length > 0)
         {
-            local_error.position = buffer.length - 1;
+            local_MESSAGE_ERROR.position = buffer.length - 1;
         }
 
         if (return_parse_end != NULL)
         {
-            *return_parse_end = (const char*)local_error.json + local_error.position;
+            *return_parse_end = (const char*)local_MESSAGE_ERROR.json + local_MESSAGE_ERROR.position;
         }
 
-        global_error = local_error;
+        global_MESSAGE_ERROR = local_MESSAGE_ERROR;
     }
 
     return NULL;

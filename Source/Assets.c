@@ -17,29 +17,29 @@ static bool load_levels(const cJSON *const json);
 static void unload_levels(void);
 
 bool load_assets(const char *const path) {
-        send_message(INFORMATION, "Assets data file to load: \"%s\"", path);
+        send_message(MESSAGE_INFORMATION, "Assets data file to load: \"%s\"", path);
         char *const json_string = load_text_file(path);
         if (!json_string) {
-                send_message(ERROR, "Failed to load assets: Failed to load data file");
+                send_message(MESSAGE_ERROR, "Failed to load assets: Failed to load data file");
                 return false;
         }
 
         cJSON *const json = cJSON_Parse(json_string);
         xfree(json_string);
         if (!json) {
-                send_message(ERROR, "Failed to load assets: Failed to parse \"%s\" as JSON data: %s", path, cJSON_GetErrorPtr());
+                send_message(MESSAGE_ERROR, "Failed to load assets: Failed to parse \"%s\" as JSON data: %s", path, cJSON_GetMESSAGE_ERRORPtr());
                 return false;
         }
 
         if (!load_fonts((const void *)cJSON_GetObjectItemCaseSensitive(json, "fonts"))) {
-                send_message(ERROR, "Failed to load assets: Failed to load fonts");
+                send_message(MESSAGE_ERROR, "Failed to load assets: Failed to load fonts");
                 cJSON_Delete(json);
                 unload_assets();
                 return false;
         }
 
         if (!load_levels((const void *)cJSON_GetObjectItemCaseSensitive(json, "levels"))) {
-                send_message(ERROR, "Failed to load assets: Failed to load levels");
+                send_message(MESSAGE_ERROR, "Failed to load assets: Failed to load levels");
                 cJSON_Delete(json);
                 unload_assets();
                 return false;
@@ -85,7 +85,7 @@ TTF_Font *get_font(const enum Font font) {
 
 static bool load_fonts(const cJSON *const json) {
         if (!cJSON_IsObject(json)) {
-                send_message(ERROR, "Failed to load fonts: JSON data is invalid");
+                send_message(MESSAGE_ERROR, "Failed to load fonts: JSON data is invalid");
                 return false;
         }
 
@@ -94,7 +94,7 @@ static bool load_fonts(const cJSON *const json) {
         const cJSON *const body_font_json = cJSON_GetObjectItemCaseSensitive(json, "body");
 
         if (!cJSON_IsString(display_font_json) || !cJSON_IsString(debug_font_json) || !cJSON_IsString(body_font_json)) {
-                send_message(ERROR, "Failed to load fonts: JSON data is invalid");
+                send_message(MESSAGE_ERROR, "Failed to load fonts: JSON data is invalid");
                 return false;
         }
 
@@ -116,7 +116,7 @@ static bool load_fonts(const cJSON *const json) {
         const float scale = (float)drawable_height / (float)window_height;
         for (size_t font_index = 0ULL; font_index < FONT_COUNT; ++font_index) {
                 if (!(fonts[font_index] = TTF_OpenFont(font_paths[font_index], (int)(font_sizes[font_index] * scale)))) {
-                        send_message(ERROR, "Failed to load fonts: Failed to open font %zu: %s", font_index, TTF_GetError());
+                        send_message(MESSAGE_ERROR, "Failed to load fonts: Failed to open font %zu: %s", font_index, TTF_GetMESSAGE_ERROR());
                         return false;
                 }
 
@@ -154,7 +154,7 @@ const struct LevelMetadata *get_level_metadata(const size_t level) {
 
 static bool load_levels(const cJSON *const json) {
         if (!cJSON_IsArray(json)) {
-                send_message(ERROR, "Failed to load levels: JSON data is invalid");
+                send_message(MESSAGE_ERROR, "Failed to load levels: JSON data is invalid");
                 return false;
         }
 
@@ -165,7 +165,7 @@ static bool load_levels(const cJSON *const json) {
         const cJSON *level_metadata_json = NULL;
         cJSON_ArrayForEach(level_metadata_json, json) {
                 if (!cJSON_IsObject(level_metadata_json)) {
-                        send_message(ERROR, "Failed to load levels: JSON data is invalid");
+                        send_message(MESSAGE_ERROR, "Failed to load levels: JSON data is invalid");
                         return false;
                 }
 
@@ -173,7 +173,7 @@ static bool load_levels(const cJSON *const json) {
                 const cJSON *const path = cJSON_GetObjectItemCaseSensitive(level_metadata_json, "path");
 
                 if (!cJSON_IsString(title) || !cJSON_IsString(path)) {
-                        send_message(ERROR, "Failed to load levels: JSON data is invalid");
+                        send_message(MESSAGE_ERROR, "Failed to load levels: JSON data is invalid");
                         return false;
                 }
 

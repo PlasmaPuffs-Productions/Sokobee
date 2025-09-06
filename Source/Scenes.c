@@ -19,7 +19,7 @@ bool initialize_scene_manager(void) {
                 const struct SceneAPI *const scene_API = scene_API_getters[(enum Scene)scene_API_index]();
                 if (scene_API->initialize) {
                         if (!scene_API->initialize()) {
-                                send_message(ERROR, "Failed to initialize scene manager: Failed to initialize scene %zu", scene_API_index);
+                                send_message(MESSAGE_ERROR, "Failed to initialize scene manager: Failed to initialize scene %zu", scene_API_index);
                                 terminate_scene_manager();
                                 return false;
                         }

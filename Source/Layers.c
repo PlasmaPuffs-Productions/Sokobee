@@ -137,7 +137,7 @@ bool is_transition_triggered(void) {
 
 bool trigger_transition_layer(void (*const callback)(void *), void *const callback_data) {
         if (transitionning) {
-                send_message(ERROR, "Failed to trigger transition: The current transition is still in use");
+                send_message(MESSAGE_ERROR, "Failed to trigger transition: The current transition is still in use");
                 return false;
         }
 

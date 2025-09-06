@@ -58,11 +58,11 @@ bool get_process_memory_usage_bytes(size_t *const out_memory_usage_bytes) {
                 return false;
         }
 
-        struct task_basic_info task_information;
+        struct task_basic_info task_MESSAGE_INFORMATION;
         mach_msg_type_number_t count = TASK_BASIC_INFO_COUNT;
 
-        if (task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&task_information, &count) == KERN_SUCCESS) {
-                *out_memory_usage_bytes = (size_t)task_information.resident_size;
+        if (task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&task_MESSAGE_INFORMATION, &count) == KERN_SUCCESS) {
+                *out_memory_usage_bytes = (size_t)task_MESSAGE_INFORMATION.resident_size;
                 return true;
         }
 
@@ -98,7 +98,7 @@ bool get_process_memory_usage_bytes(size_t *const out_memory_usage_bytes) {
 
 #else
 
-#warning "Unsupported platform for getting process memory usage"
+#MESSAGE_WARNING "Unsupported platform for getting process memory usage"
 
 bool get_process_memory_usage_bytes(size_t *const out_memory_usage_bytes) {
         return false;

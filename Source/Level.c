@@ -309,7 +309,7 @@ static void resize_level(struct Level *const level);
 struct Level *load_level(const struct LevelMetadata *const metadata) {
         struct Level *const level = (struct Level *)xcalloc(1, sizeof(struct Level));
         if (!initialize_level(level, metadata)) {
-                send_message(ERROR, "Failed to load level: Failed to initialize level");
+                send_message(MESSAGE_ERROR, "Failed to load level: Failed to initialize level");
                 destroy_level(level);
                 return NULL;
         }
@@ -319,7 +319,7 @@ struct Level *load_level(const struct LevelMetadata *const metadata) {
 
 void destroy_level(struct Level *const level) {
         if (!level) {
-                send_message(WARNING, "Level given to destroy is NULL");
+                send_message(MESSAGE_WARNING, "Level given to destroy is NULL");
                 return;
         }
 
@@ -345,7 +345,7 @@ bool initialize_level(struct Level *const level, const struct LevelMetadata *con
 
         char *const json_string = load_text_file(metadata->path);
         if (!json_string) {
-                send_message(ERROR, "Failed to initialize level \"%s\": Failed to load level data file \"%s\"", metadata->title, metadata->path);
+                send_message(MESSAGE_ERROR, "Failed to initialize level \"%s\": Failed to load level data file \"%s\"", metadata->title, metadata->path);
                 deinitialize_level(level);
                 return false;
         }
@@ -354,13 +354,13 @@ bool initialize_level(struct Level *const level, const struct LevelMetadata *con
         xfree(json_string);
 
         if (!json) {
-                send_message(ERROR, "Failed to initialize level \"%s\": Failed to parse level data file \"%s\": %s", metadata->title, metadata->path, cJSON_GetErrorPtr());
+                send_message(MESSAGE_ERROR, "Failed to initialize level \"%s\": Failed to parse level data file \"%s\": %s", metadata->title, metadata->path, cJSON_GetMESSAGE_ERRORPtr());
                 deinitialize_level(level);
                 return false;
         }
 
         if (!parse_level(json, level)) {
-                send_message(ERROR, "Failed to initialize level \"%s\": Failed to parse level", metadata->title);
+                send_message(MESSAGE_ERROR, "Failed to initialize level \"%s\": Failed to parse level", metadata->title);
                 deinitialize_level(level);
                 cJSON_Delete(json);
                 return NULL;
@@ -378,7 +378,7 @@ bool initialize_level(struct Level *const level, const struct LevelMetadata *con
 
 void deinitialize_level(struct Level *const level) {
         if (!level) {
-                send_message(WARNING, "Level given to deinitialize is NULL");
+                send_message(MESSAGE_WARNING, "Level given to deinitialize is NULL");
                 return;
         }
 
@@ -583,7 +583,7 @@ void update_level(struct Level *const level, const double delta_time) {
 
 static bool parse_level(const cJSON *const json, struct Level *const level) {
         if (!cJSON_IsObject(json)) {
-                send_message(ERROR, "Failed to parse level: JSON data is invalid");
+                send_message(MESSAGE_ERROR, "Failed to parse level: JSON data is invalid");
                 return false;
         }
 
@@ -593,19 +593,19 @@ static bool parse_level(const cJSON *const json, struct Level *const level) {
         const cJSON *const entities_json = cJSON_GetObjectItemCaseSensitive(json, "entities");
 
         if (!cJSON_IsNumber(columns_json) || !cJSON_IsNumber(rows_json) || !cJSON_IsArray(tiles_json) || !cJSON_IsArray(entities_json)) {
-                send_message(ERROR, "Failed to parse level: JSON data is invalid");
+                send_message(MESSAGE_ERROR, "Failed to parse level: JSON data is invalid");
                 return false;
         }
 
         const double columns = columns_json->valuedouble;
         if (floor(columns) != columns || columns <= 0.0 || columns > (double)LEVEL_DIMENSION_LIMIT) {
-                send_message(ERROR, "Failed to parse level: The grid columns %lf is invalid, it should be an integer between 0 and %u", columns, LEVEL_DIMENSION_LIMIT);
+                send_message(MESSAGE_ERROR, "Failed to parse level: The grid columns %lf is invalid, it should be an integer between 0 and %u", columns, LEVEL_DIMENSION_LIMIT);
                 return false;
         }
 
         const double rows = rows_json->valuedouble;
         if (floor(rows) != rows || rows <= 0.0 || rows > (double)LEVEL_DIMENSION_LIMIT) {
-                send_message(ERROR, "Failed to parse level: The grid rows %lf is invalid, it should be an integer between 0 and %u", rows, LEVEL_DIMENSION_LIMIT);
+                send_message(MESSAGE_ERROR, "Failed to parse level: The grid rows %lf is invalid, it should be an integer between 0 and %u", rows, LEVEL_DIMENSION_LIMIT);
                 return false;
         }
 
@@ -616,7 +616,7 @@ static bool parse_level(const cJSON *const json, struct Level *const level) {
         const size_t tile_count = (size_t)cJSON_GetArraySize(tiles_json);
         implementation->tile_count = (size_t)level->columns * (size_t)level->rows;
         if (tile_count != implementation->tile_count) {
-                send_message(ERROR, "Failed to parse level: The tile count of %zu does not match the expected tile count of %zu (%u * %u)", tile_count, implementation->tile_count, level->columns, level->rows);
+                send_message(MESSAGE_ERROR, "Failed to parse level: The tile count of %zu does not match the expected tile count of %zu (%u * %u)", tile_count, implementation->tile_count, level->columns, level->rows);
                 return false;
         }
 
@@ -626,13 +626,13 @@ static bool parse_level(const cJSON *const json, struct Level *const level) {
         const cJSON *tile_json = NULL;
         cJSON_ArrayForEach(tile_json, tiles_json) {
                 if (!cJSON_IsNumber(tile_json)) {
-                        send_message(ERROR, "Failed to parse level: JSON data is invalid");
+                        send_message(MESSAGE_ERROR, "Failed to parse level: JSON data is invalid");
                         return false;
                 }
 
                 const double tile = tile_json->valuedouble;
                 if (floor(tile) != tile || tile < 0.0 || (size_t)tile > (size_t)TILE_COUNT) {
-                        send_message(ERROR, "Failed to parse level: The tile #%zu of %lf is invalid, it should be an integer between 0 and %d", tile_index, tile, (int)TILE_COUNT);
+                        send_message(MESSAGE_ERROR, "Failed to parse level: The tile #%zu of %lf is invalid, it should be an integer between 0 and %d", tile_index, tile, (int)TILE_COUNT);
                         return false;
                 }
 
@@ -641,7 +641,7 @@ static bool parse_level(const cJSON *const json, struct Level *const level) {
 
         const int entities_length = cJSON_GetArraySize(entities_json);
         if (entities_length % 4) {
-                send_message(ERROR, "Failed to parse level: Entities array length of %d is not a multiple of 4", entities_length);
+                send_message(MESSAGE_ERROR, "Failed to parse level: Entities array length of %d is not a multiple of 4", entities_length);
                 return false;
         }
 

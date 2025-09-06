@@ -26,7 +26,7 @@ struct Animation *create_animation(const size_t action_count) {
 
 void destroy_animation(struct Animation *const animation) {
         if (!animation) {
-                send_message(WARNING, "Animation given to destroy is NULL");
+                send_message(MESSAGE_WARNING, "Animation given to destroy is NULL");
                 return;
         }
 
@@ -43,7 +43,7 @@ void initialize_animation(struct Animation *const animation, const size_t action
 
 void deinitialize_animation(struct Animation *const animation) {
         if (!animation) {
-                send_message(WARNING, "Animation given to deinitialize is NULL");
+                send_message(MESSAGE_WARNING, "Animation given to deinitialize is NULL");
                 return;
         }
 
@@ -134,7 +134,7 @@ static void start_action(struct Action *const action) {
         switch (action->type) {
                 case ACTION_FLOAT: {
                         if (!action->target.float_pointer) {
-                                send_message(ERROR, "Failed to start action: The float pointer referencing the start keyframe is NULL");
+                                send_message(MESSAGE_ERROR, "Failed to start action: The float pointer referencing the start keyframe is NULL");
                                 return;
                         }
 
@@ -144,7 +144,7 @@ static void start_action(struct Action *const action) {
 
                 case ACTION_POINT: {
                         if (!action->target.point_pointer) {
-                                send_message(ERROR, "Failed to start action: The point pointer referencing the start keyframe is NULL");
+                                send_message(MESSAGE_ERROR, "Failed to start action: The point pointer referencing the start keyframe is NULL");
                                 return;
                         }
 
@@ -154,7 +154,7 @@ static void start_action(struct Action *const action) {
 
                 case ACTION_COLOR: {
                         if (!action->target.color_pointer) {
-                                send_message(ERROR, "Failed to start action: The color pointer referencing the start keyframe is NULL");
+                                send_message(MESSAGE_ERROR, "Failed to start action: The color pointer referencing the start keyframe is NULL");
                                 return;
                         }
 

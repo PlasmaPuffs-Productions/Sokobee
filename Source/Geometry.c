@@ -71,7 +71,7 @@ struct Geometry *create_geometry(void) {
 
 void destroy_geometry(struct Geometry *const geometry) {
         if (geometry == NULL) {
-                send_message(WARNING, "Geometry given to destroy is NULL");
+                send_message(MESSAGE_WARNING, "Geometry given to destroy is NULL");
                 return;
         }
 

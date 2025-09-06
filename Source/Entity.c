@@ -162,7 +162,7 @@ struct Entity *create_entity(struct Level *const level, const enum EntityType ty
 
 void destroy_entity(struct Entity *const entity) {
         if (!entity) {
-                send_message(WARNING, "Given entity to destroy is NULL");
+                send_message(MESSAGE_WARNING, "Given entity to destroy is NULL");
                 return;
         }
 
