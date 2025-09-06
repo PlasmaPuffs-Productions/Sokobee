@@ -7,7 +7,7 @@
 #include "Utilities.h"
 #include "Geometry.h"
 
-#include <SDL.h>
+#include "SDL.h"
 
 // ================================================================================================
 // Hexagon Orientation

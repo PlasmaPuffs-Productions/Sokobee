@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include <SDL.h>
+#include "SDL.h"
 
 #include "Assets.h"
 #include "Button.h"

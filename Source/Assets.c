@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include <SDL_ttf.h>
-#include <SDL_mixer.h>
+#include "SDL_ttf.h"
+#include "SDL_mixer.h"
 
 #include "Context.h"
 #include "Utilities.h"

@@ -1,6 +1,6 @@
 #include "Debug.h"
 
-#include <SDL.h>
+#include "SDL.h"
 
 #ifdef NDEBUG
 

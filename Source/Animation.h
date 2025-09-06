@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include <SDL.h>
+#include "SDL.h"
 
 enum Easing {
         LINEAR,

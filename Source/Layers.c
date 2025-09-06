@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdbool.h>
 
-#include <SDL.h>
+#include "SDL.h"
 
 #include "Context.h"
 #include "Geometry.h"

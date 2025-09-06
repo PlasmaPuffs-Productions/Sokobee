@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 
-#include <SDL.h>
+#include "SDL.h"
 
 #include "Utilities.h"
 

@@ -6,8 +6,7 @@
 #include <stdbool.h>
 #include <errno.h>
 
-#include <SDL.h>
-#include <SDL_render.h>
+#include "SDL.h"
 
 #include "Utilities.h"
 #include "Context.h"

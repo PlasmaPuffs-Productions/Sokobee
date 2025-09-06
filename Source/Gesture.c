@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <math.h>
 
-#include <SDL.h>
+#include "SDL.h"
 
 #include "Debug.h"
 #include "Context.h"

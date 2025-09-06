@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <SDL.h>
+#include "SDL.h"
 
 #include "Audio.h"
 #include "cJSON.h"

@@ -2,10 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <SDL.h>
-#include <SDL_render.h>
-#include <SDL_mixer.h>
-#include <SDL_ttf.h>
+#include "SDL.h"
 
 #include "Audio.h"
 #include "Debug.h"

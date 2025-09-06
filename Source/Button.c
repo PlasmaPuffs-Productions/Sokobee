@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include <SDL.h>
+#include "SDL.h"
 
 #include "Audio.h"
 #include "Cursor.h"

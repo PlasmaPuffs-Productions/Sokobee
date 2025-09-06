@@ -2,8 +2,7 @@
 
 #include <stdbool.h>
 
-#include <SDL.h>
-#include <SDL_render.h>
+#include "SDL.h"
 
 #include "Utilities.h"
 

@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 
-#include <SDL.h>
+#include "SDL.h"
 
 #include "Text.h"
 #include "Layers.h"

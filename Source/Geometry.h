@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include <SDL.h>
+#include "SDL.h"
 
 void track_geometry_data(void);
 
